@@ -1,5 +1,6 @@
 use log::Log;
 
+mod ansi_escape;
 pub mod drivers;
 
 pub struct LogDriver {
