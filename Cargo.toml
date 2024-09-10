@@ -1,0 +1,15 @@
+[package]
+name = "ftail"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Ftail is a simple logging library for Rust"
+repository = "https://github.com/tjardoo/ftail"
+keywords = ["log", "logging"]
+
+[dependencies]
+log = { version = "0.4", features = ["std"] }
+chrono = "0.4"
+
+[workspace]
+members = ["examples/console"]
