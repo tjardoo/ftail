@@ -1,10 +1,8 @@
 use ftail::{drivers::console::ConsoleLogger, Ftail};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("Hello, world!");
-
     Ftail::new()
-        .add_driver(ConsoleLogger::new(), log::LevelFilter::Debug)
+        .add_driver(ConsoleLogger::new(), log::LevelFilter::Trace)
         .init()?;
 
     log::trace!("This is a trace message");
