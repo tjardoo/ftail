@@ -15,6 +15,7 @@ chrono = "0.4"
 members = [
     "examples/console",
     "examples/custom",
+    "examples/daily",
     "examples/single",
     "examples/stack",
     "examples/stdout",

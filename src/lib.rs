@@ -1,4 +1,6 @@
-use drivers::{console::ConsoleLogger, single::SingleLogger, stdout::StdOutLogger};
+use drivers::{
+    console::ConsoleLogger, daily::DailyLogger, single::SingleLogger, stdout::StdOutLogger,
+};
 use error::FtailError;
 use log::Log;
 
@@ -38,6 +40,10 @@ impl Ftail {
 
     pub fn single(self, path: &str, append: bool, level: log::LevelFilter) -> Self {
         self.add_driver(Box::new(SingleLogger::new(path, append)), level)
+    }
+
+    pub fn daily(self, path: &str, level: log::LevelFilter) -> Self {
+        self.add_driver(Box::new(DailyLogger::new(path)), level)
     }
 
     pub fn custom(self, driver: Box<dyn Log>, level: log::LevelFilter) -> Self {

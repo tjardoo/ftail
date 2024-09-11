@@ -100,7 +100,18 @@ Ftail::new()
 
 ### Daily
 
-TODO
+Logs to a daily log file.
+
+The `daily` driver takes the following parameters:
+
+- `dir`: the directory to store the log files
+- `level`: the minumum log level to log
+
+```rust
+Ftail::new()
+    .daily("logs", LevelFilter::Trace)
+    .init()?;
+```
 
 ### Custom
 
