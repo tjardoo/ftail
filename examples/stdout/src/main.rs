@@ -10,9 +10,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     log::info!(target: "foo", "bar");
 
-    log::warn!("This is a warning");
+    log::warn!("This is a warning message");
 
-    log::error!("This is an error");
+    log::error!("This is an error message");
 
     Ok(())
 }

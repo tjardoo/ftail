@@ -28,6 +28,10 @@ log::info!("This is an info message");
 
 Logs to the standard output.
 
+The `stdout` driver takes the following parameters:
+
+- `level`: the minumum log level to log
+
 ```rust
 Ftail::new()
     .stdout(LevelFilter::Trace)
@@ -45,6 +49,10 @@ Ftail::new()
 ### Console
 
 Logs to the standard output with formatted and colored output.
+
+The `console` driver takes the following parameters:
+
+- `level`: the minumum log level to log
 
 ```rust
 Ftail::new()
@@ -76,7 +84,19 @@ examples\console\src/main.rs:16
 
 ### Single
 
-TODO
+Logs to a single file.
+
+The `single` driver takes the following parameters:
+
+- `path`: the path to the log file
+- `append`: whether to append to the log file or overwrite it
+- `level`: the minumum log level to log
+
+```rust
+Ftail::new()
+    .single("logs/demo.log", true, LevelFilter::Trace)
+    .init()?;
+```
 
 ### Daily
 

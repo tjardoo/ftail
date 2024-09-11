@@ -12,4 +12,10 @@ log = { version = "0.4", features = ["std"] }
 chrono = "0.4"
 
 [workspace]
-members = ["examples/console", "examples/custom", "examples/stack", "examples/stdout"]
+members = [
+    "examples/console",
+    "examples/custom",
+    "examples/single",
+    "examples/stack",
+    "examples/stdout",
+]
