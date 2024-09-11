@@ -18,15 +18,11 @@ impl SingleLogger {
             .open(path)
             .unwrap();
 
-        // @todo
-        // let md = std::fs::metadata("logs").unwrap();
-        // let permissions = md.permissions();
+        let md = std::fs::metadata(path).unwrap();
 
-        // if permissions.readonly() {
-        //     return Err(P2000Error::ConfigurationError(format!(
-        //         "directory /logs is readonly"
-        //     )));
-        // }
+        if md.permissions().readonly() {
+            panic!("The logs directory `{path}` is readonly");
+        }
 
         SingleLogger {
             file: Mutex::new(LineWriter::new(file)),
