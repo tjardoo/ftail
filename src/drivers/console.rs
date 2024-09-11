@@ -4,22 +4,12 @@ use crate::ansi_escape::TextStyling;
 
 pub struct ConsoleLogger {}
 
-impl ConsoleLogger {
-    pub fn new() -> Box<ConsoleLogger> {
-        Box::new(ConsoleLogger {})
-    }
-}
-
 impl Log for ConsoleLogger {
     fn enabled(&self, _metadata: &log::Metadata) -> bool {
         true
     }
 
     fn log(&self, record: &log::Record) {
-        if !self.enabled(record.metadata()) {
-            return;
-        }
-
         let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
         let level = match record.level() {

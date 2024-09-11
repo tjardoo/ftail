@@ -1,9 +1,8 @@
-use ftail::{drivers::stdout::StdOutLogger, Ftail};
+use ftail::Ftail;
+use log::LevelFilter;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    Ftail::new()
-        .add_driver(StdOutLogger::new(), log::LevelFilter::Trace)
-        .init()?;
+    Ftail::new().stdout(LevelFilter::Trace).init()?;
 
     log::trace!("This is a trace message");
 

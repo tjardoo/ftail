@@ -1,9 +1,12 @@
+use drivers::{console::ConsoleLogger, stdout::StdOutLogger};
+use error::FtailError;
 use log::Log;
 
 mod ansi_escape;
 pub mod drivers;
+pub mod error;
 
-pub struct LogDriver {
+pub(crate) struct LogDriver {
     driver: Box<dyn Log>,
     level: log::LevelFilter,
 }
@@ -19,15 +22,27 @@ impl Ftail {
         }
     }
 
-    pub fn add_driver(mut self, driver: Box<dyn Log>, level: log::LevelFilter) -> Self {
+    fn add_driver(mut self, driver: Box<dyn Log>, level: log::LevelFilter) -> Self {
         self.drivers.push(LogDriver { driver, level });
 
         self
     }
 
-    pub fn init(self) -> Result<(), log::SetLoggerError> {
+    pub fn stdout(self, level: log::LevelFilter) -> Self {
+        self.add_driver(Box::new(Box::new(StdOutLogger {})), level)
+    }
+
+    pub fn console(self, level: log::LevelFilter) -> Self {
+        self.add_driver(Box::new(Box::new(ConsoleLogger {})), level)
+    }
+
+    pub fn custom(self, driver: Box<dyn Log>, level: log::LevelFilter) -> Self {
+        self.add_driver(Box::new(driver), level)
+    }
+
+    pub fn init(self) -> Result<(), FtailError> {
         log::set_max_level(log::LevelFilter::Trace);
-        log::set_boxed_logger(Box::new(self))
+        log::set_boxed_logger(Box::new(self)).map_err(FtailError::SetLoggerError)
     }
 }
 

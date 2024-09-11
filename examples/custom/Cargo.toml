@@ -1,0 +1,10 @@
+[package]
+name = "custom"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+log = "0.4"
+ftail = { path = "../../../ftail" }
+chrono = "0.4"
