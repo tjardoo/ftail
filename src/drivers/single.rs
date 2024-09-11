@@ -5,6 +5,8 @@ use std::{
     sync::Mutex,
 };
 
+use crate::formatters::{default::DefaultFormatter, Formatter};
+
 pub struct SingleLogger {
     file: Mutex<LineWriter<File>>,
 }
@@ -36,18 +38,10 @@ impl Log for SingleLogger {
     }
 
     fn log(&self, record: &log::Record) {
-        let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-
-        let line = format!(
-            "{} {} {} {}",
-            now,
-            record.level(),
-            record.target(),
-            record.args()
-        );
+        let formatter = DefaultFormatter::new(record);
 
         let mut file = self.file.lock().unwrap();
-        writeln!(file, "{}", line).unwrap();
+        writeln!(file, "{}", formatter.format()).unwrap();
         file.flush().unwrap();
     }
 

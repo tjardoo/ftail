@@ -1,5 +1,7 @@
 use log::Log;
 
+use crate::formatters::{default::DefaultFormatter, Formatter};
+
 pub struct StdOutLogger {}
 
 impl Log for StdOutLogger {
@@ -8,15 +10,9 @@ impl Log for StdOutLogger {
     }
 
     fn log(&self, record: &log::Record) {
-        let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        let formatter = DefaultFormatter::new(record);
 
-        println!(
-            "{} {} {} {}",
-            now,
-            record.level(),
-            record.target(),
-            record.args()
-        );
+        println!("{}", formatter.format());
     }
 
     fn flush(&self) {}

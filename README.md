@@ -42,8 +42,8 @@ Ftail::new()
 2024-09-10 14:41:57 TRACE stdout This is a trace message
 2024-09-10 14:41:57 DEBUG stdout This is a debug message
 2024-09-10 14:41:57 INFO foo bar
-2024-09-10 14:41:57 WARN stdout This is a warning
-2024-09-10 14:41:57 ERROR stdout This is an error
+2024-09-10 14:41:57 WARN stdout This is a warning message
+2024-09-10 14:41:57 ERROR stdout This is an error message
 ```
 
 ### Console
@@ -74,11 +74,11 @@ bar
 examples\console\src/main.rs:12
 
 2024-09-10 14:42:21 · WARN
-This is a warning
+This is a warning message
 examples\console\src/main.rs:14
 
 2024-09-10 14:42:21 · ERROR
-This is an error
+This is an error message
 examples\console\src/main.rs:16
 ```
 

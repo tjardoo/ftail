@@ -7,6 +7,8 @@ use log::Log;
 mod ansi_escape;
 pub mod drivers;
 pub mod error;
+mod formatters;
+mod writer;
 
 pub(crate) struct LogDriver {
     driver: Box<dyn Log>,
