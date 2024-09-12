@@ -7,7 +7,7 @@ use std::{
 
 use crate::{
     error::FtailError,
-    formatters::{default::DefaultFormatter, Formatter},
+    formatters::{default::DefaultFormatter, Config, Formatter},
 };
 
 /// A logger that logs messages to a daily log file.
@@ -15,10 +15,11 @@ pub struct DailyFileLogger {
     file: Mutex<LineWriter<File>>,
     dir: String,
     current_date: Mutex<String>,
+    config: Config,
 }
 
 impl DailyFileLogger {
-    pub fn new(dir: &str) -> Result<Self, FtailError> {
+    pub fn new(dir: &str, config: Config) -> Result<Self, FtailError> {
         let today = chrono::Local::now().format("%Y-%m-%d").to_string();
         let path = format!("{}/{}.log", dir, today);
 
@@ -38,6 +39,7 @@ impl DailyFileLogger {
             file: Mutex::new(LineWriter::new(file)),
             dir: dir.to_string(),
             current_date: Mutex::new(today),
+            config,
         })
     }
 
@@ -70,7 +72,9 @@ impl Log for DailyFileLogger {
     fn log(&self, record: &log::Record) {
         self.rotate_file_if_needed();
 
-        let formatter = DefaultFormatter::new(record);
+        let config = self.config.clone();
+
+        let formatter = DefaultFormatter::new(record, config);
 
         let mut file = self.file.lock().unwrap();
         writeln!(file, "{}", formatter.format()).unwrap();

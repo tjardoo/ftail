@@ -10,18 +10,30 @@
 //!
 //! ## Usage
 //!
+//! Add the following dependencies to your `Cargo.toml` file:
+//!
+//! ```toml
+//! [dependencies]
+//! log = "0.4"
+//! ftail = "0.1"
+//! ```
+//!
+//! Add the following code to your `main.rs` or `lib.rs` file:
+//!
 //! ```rust
 //! use ftail::Ftail;
 //! use log::LevelFilter;
 //!
 //! Ftail::new()
+//!     .timezone(chrono_tz::Europe::Amsterdam) // optional (default is UTC)
 //!     .console(LevelFilter::Debug)
 //!     .daily_file("logs", LevelFilter::Error)
 //!     .init()?;
 //!
+//! // log messages anywhere in your code
 //! log::trace!("This is a trace message");
 //! log::debug!("This is a debug message");
-//! log::info!("This is an info message");
+//! log::info!(target: "foo", "bar");
 //! log::warn!("This is a warning message");
 //! log::error!("This is an error message");
 //! ```
@@ -121,8 +133,6 @@
 //!
 //! Create your own log driver.
 //!
-//! You can add text formatting, by using the `use ftail::ansi_escape::TextStyling;` module.
-//!
 //! ```rust
 //! Ftail::new()
 //!     .custom(Box::new(Box::new(CustomLogger {})), LevelFilter::Debug)
@@ -151,6 +161,7 @@ use drivers::{
     single_file::SingleFileLogger,
 };
 use error::FtailError;
+use formatters::Config;
 use log::Log;
 
 /// Module containing the ANSI escape codes.
@@ -170,6 +181,7 @@ pub(crate) struct LogDriver {
 /// The main struct for configuring the logger.
 pub struct Ftail {
     drivers: Vec<LogDriver>,
+    config: Config,
 }
 
 impl Ftail {
@@ -177,7 +189,22 @@ impl Ftail {
     pub fn new() -> Self {
         Self {
             drivers: Vec::new(),
+            config: Config::new(),
         }
+    }
+
+    /// Set the timezone for the logger.
+    pub fn timezone(mut self, timezone: chrono_tz::Tz) -> Self {
+        self.config.timezone = timezone;
+
+        self
+    }
+
+    /// Set the datetime format for the logger.
+    pub fn datetime_format(mut self, datetime_format: &str) -> Self {
+        self.config.datetime_format = datetime_format.to_string();
+
+        self
     }
 
     fn add_driver(mut self, driver: Box<dyn Log>, level: log::LevelFilter) -> Self {
@@ -188,25 +215,33 @@ impl Ftail {
 
     /// Add a driver that logs messages to the console.
     pub fn console(self, level: log::LevelFilter) -> Self {
-        self.add_driver(Box::new(Box::new(ConsoleLogger {})), level)
+        let config = self.config.clone();
+
+        self.add_driver(Box::new(ConsoleLogger::new(config)), level)
     }
 
     /// Add a driver that logs formatted messages to the console.
     pub fn formatted_console(self, level: log::LevelFilter) -> Self {
-        self.add_driver(Box::new(Box::new(FormattedConsoleLogger {})), level)
+        let config = self.config.clone();
+
+        self.add_driver(Box::new(FormattedConsoleLogger::new(config)), level)
     }
 
     /// Add a driver that logs messages to a single file.
     pub fn single_file(self, path: &str, append: bool, level: log::LevelFilter) -> Self {
+        let config = self.config.clone();
+
         self.add_driver(
-            Box::new(SingleFileLogger::new(path, append).unwrap()),
+            Box::new(SingleFileLogger::new(path, append, config).unwrap()),
             level,
         )
     }
 
     /// Add a driver that logs messages to a daily log file.
     pub fn daily_file(self, path: &str, level: log::LevelFilter) -> Self {
-        self.add_driver(Box::new(DailyFileLogger::new(path).unwrap()), level)
+        let config = self.config.clone();
+
+        self.add_driver(Box::new(DailyFileLogger::new(path, config).unwrap()), level)
     }
 
     /// Add a custom driver.

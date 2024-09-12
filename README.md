@@ -10,18 +10,30 @@ Ftail is simple logging implementation for the `log` crate with support for mult
 
 ## Usage
 
+Add the following dependencies to your `Cargo.toml` file:
+
+```toml
+[dependencies]
+log = "0.4"
+ftail = "0.1"
+```
+
+Add the following code to your `main.rs` or `lib.rs` file:
+
 ```rust
 use ftail::Ftail;
 use log::LevelFilter;
 
 Ftail::new()
+    .timezone(chrono_tz::Europe::Amsterdam) // optional (default is UTC)
     .console(LevelFilter::Debug)
     .daily_file("logs", LevelFilter::Error)
     .init()?;
 
+// log messages anywhere in your code
 log::trace!("This is a trace message");
 log::debug!("This is a debug message");
-log::info!("This is an info message");
+log::info!(target: "foo", "bar");
 log::warn!("This is a warning message");
 log::error!("This is an error message");
 ```
@@ -120,8 +132,6 @@ Ftail::new()
 ### Custom driver
 
 Create your own log driver.
-
-You can add text formatting, by using the `use ftail::ansi_escape::TextStyling;` module.
 
 ```rust
 Ftail::new()

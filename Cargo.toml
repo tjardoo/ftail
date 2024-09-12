@@ -10,6 +10,7 @@ keywords = ["log", "logging"]
 [dependencies]
 log = { version = "0.4", features = ["std"] }
 chrono = "0.4"
+chrono-tz = "0.10"
 
 [workspace]
 members = [

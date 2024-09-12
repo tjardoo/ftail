@@ -4,7 +4,12 @@ use log::LevelFilter;
 // This example demonstrates how to log messages to stdout.
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    Ftail::new().console(LevelFilter::Off).init()?;
+    Ftail::new()
+        .timezone(chrono_tz::UTC)
+        // .timezone(chrono_tz::Europe::Amsterdam)
+        .datetime_format("%d-%m-%Y %H:%M:%S")
+        .console(LevelFilter::Off)
+        .init()?;
 
     log::trace!("This is a trace message");
 
