@@ -5,8 +5,9 @@ use log::LevelFilter;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ftail::new()
-        .single("logs/trace.log", true, LevelFilter::Trace)
-        .single("logs/error.log", true, LevelFilter::Error)
+        .console(LevelFilter::Info)
+        .single_file("logs/trace.log", true, LevelFilter::Trace)
+        .single_file("logs/error.log", true, LevelFilter::Error)
         .init()?;
 
     log::trace!("This is a trace message");

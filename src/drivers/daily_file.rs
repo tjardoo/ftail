@@ -11,13 +11,13 @@ use crate::{
 };
 
 /// A logger that logs messages to a daily log file.
-pub struct DailyLogger {
+pub struct DailyFileLogger {
     file: Mutex<LineWriter<File>>,
     dir: String,
     current_date: Mutex<String>,
 }
 
-impl DailyLogger {
+impl DailyFileLogger {
     pub fn new(dir: &str) -> Result<Self, FtailError> {
         let today = chrono::Local::now().format("%Y-%m-%d").to_string();
         let path = format!("{}/{}.log", dir, today);
@@ -34,7 +34,7 @@ impl DailyLogger {
             return Err(FtailError::PermissionsError(dir.to_string()));
         }
 
-        Ok(DailyLogger {
+        Ok(DailyFileLogger {
             file: Mutex::new(LineWriter::new(file)),
             dir: dir.to_string(),
             current_date: Mutex::new(today),
@@ -62,7 +62,7 @@ impl DailyLogger {
     }
 }
 
-impl Log for DailyLogger {
+impl Log for DailyFileLogger {
     fn enabled(&self, _metadata: &log::Metadata) -> bool {
         true
     }

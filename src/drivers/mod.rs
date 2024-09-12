@@ -1,4 +1,4 @@
 pub mod console;
-pub mod daily;
+pub mod daily_file;
 pub mod formatted_console;
-pub mod single;
+pub mod single_file;

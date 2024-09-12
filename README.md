@@ -4,9 +4,9 @@ Ftail is simple logging implementation for the `log` crate with support for mult
 
 - [Console](#console)
 - [Formatted console](#formatted-console)
-- [Single](#single)
-- [Daily](#daily)
-- [Custom](#custom)
+- [Single file](#single-file)
+- [Daily file](#daily-file)
+- [Custom driver](#custom-driver)
 
 ## Usage
 
@@ -16,10 +16,14 @@ use log::LevelFilter;
 
 Ftail::new()
     .console(LevelFilter::Debug)
+    .daily_file("logs", LevelFilter::Error)
     .init()?;
 
+log::trace!("This is a trace message");
 log::debug!("This is a debug message");
 log::info!("This is an info message");
+log::warn!("This is a warning message");
+log::error!("This is an error message");
 ```
 
 ## Drivers
@@ -82,11 +86,11 @@ This is an error message
 examples\console\src/main.rs:16
 ```
 
-### Single
+### Single file
 
 Logs to the single log file `logs/demo.log`.
 
-The `single` driver takes the following parameters:
+The `single_file` driver takes the following parameters:
 
 - `path`: the path to the log file
 - `append`: whether to append to the log file or overwrite it
@@ -94,26 +98,26 @@ The `single` driver takes the following parameters:
 
 ```rust
 Ftail::new()
-    .single("logs/demo.log", true, LevelFilter::Trace)
+    .single_file("logs/demo.log", true, LevelFilter::Trace)
     .init()?;
 ```
 
-### Daily
+### Daily file
 
 Logs to a daily log file in the `logs` directory.
 
-The `daily` driver takes the following parameters:
+The `daily_file` driver takes the following parameters:
 
 - `dir`: the directory to store the log files
 - `level`: the minumum log level to log
 
 ```rust
 Ftail::new()
-    .daily("logs", LevelFilter::Trace)
+    .daily_file("logs", LevelFilter::Trace)
     .init()?;
 ```
 
-### Custom
+### Custom driver
 
 Create your own log driver.
 

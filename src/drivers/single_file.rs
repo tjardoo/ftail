@@ -11,11 +11,11 @@ use crate::{
 };
 
 /// A logger that logs messages to a single log file.
-pub struct SingleLogger {
+pub struct SingleFileLogger {
     file: Mutex<LineWriter<File>>,
 }
 
-impl SingleLogger {
+impl SingleFileLogger {
     pub fn new(path: &str, append: bool) -> Result<Self, FtailError> {
         let file = std::fs::OpenOptions::new()
             .create(true)
@@ -30,13 +30,13 @@ impl SingleLogger {
             return Err(FtailError::PermissionsError(path.to_string()));
         }
 
-        Ok(SingleLogger {
+        Ok(SingleFileLogger {
             file: Mutex::new(LineWriter::new(file)),
         })
     }
 }
 
-impl Log for SingleLogger {
+impl Log for SingleFileLogger {
     fn enabled(&self, _metadata: &log::Metadata) -> bool {
         true
     }

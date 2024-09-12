@@ -1,12 +1,10 @@
 use ftail::Ftail;
 use log::LevelFilter;
 
-// This example demonstrates how to log messages to a single file in the logs directory.
+// This example demonstrates how to log messages to a daily log file in the logs directory.
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    Ftail::new()
-        .single("logs/demo.log", true, LevelFilter::Trace)
-        .init()?;
+    Ftail::new().daily_file("logs", LevelFilter::Trace).init()?;
 
     log::trace!("This is a trace message");
 

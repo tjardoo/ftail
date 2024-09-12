@@ -15,8 +15,8 @@ chrono = "0.4"
 members = [
     "examples/console",
     "examples/formatted_console",
-    "examples/single",
-    "examples/daily",
+    "examples/single_file",
+    "examples/daily_file",
     "examples/stack",
     "examples/custom",
 ]
