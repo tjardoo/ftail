@@ -4,20 +4,18 @@ use super::Formatter;
 
 pub struct DefaultFormatter<'a> {
     record: &'a log::Record<'a>,
-    config: Config,
+    config: &'a Config,
 }
 
 impl DefaultFormatter<'_> {
-    pub fn new<'a>(record: &'a log::Record<'a>, config: Config) -> DefaultFormatter<'a> {
+    pub fn new<'a>(record: &'a log::Record<'a>, config: &'a Config) -> DefaultFormatter<'a> {
         DefaultFormatter { record, config }
     }
 }
 
 impl<'a> Formatter for DefaultFormatter<'a> {
     fn format(&self) -> String {
-        let config = self.config.clone();
-
-        let writer = LogWriter::new(self.record, config);
+        let writer = LogWriter::new(self.record, self.config);
 
         format!(
             "{} {} {} {}",

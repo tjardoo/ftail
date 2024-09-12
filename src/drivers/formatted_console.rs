@@ -19,9 +19,7 @@ impl Log for FormattedConsoleLogger {
     }
 
     fn log(&self, record: &log::Record) {
-        let config = self.config.clone();
-
-        let formatter = ReadableFormatter::new(record, config);
+        let formatter = ReadableFormatter::new(record, &self.config);
 
         println!("{}", formatter.format());
     }

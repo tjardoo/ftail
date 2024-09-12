@@ -19,9 +19,7 @@ impl Log for ConsoleLogger {
     }
 
     fn log(&self, record: &log::Record) {
-        let config = self.config.clone();
-
-        let formatter = DefaultFormatter::new(record, config);
+        let formatter = DefaultFormatter::new(record, &self.config);
 
         println!("{}", formatter.format());
     }

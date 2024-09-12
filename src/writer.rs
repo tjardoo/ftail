@@ -4,11 +4,11 @@ use crate::formatters::Config;
 
 pub(crate) struct LogWriter<'a> {
     record: &'a Record<'a>,
-    config: Config,
+    config: &'a Config,
 }
 
 impl<'a> LogWriter<'a> {
-    pub fn new(record: &'a Record<'a>, config: Config) -> LogWriter<'a> {
+    pub fn new(record: &'a Record<'a>, config: &'a Config) -> LogWriter<'a> {
         LogWriter { record, config }
     }
 

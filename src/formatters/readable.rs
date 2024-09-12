@@ -4,20 +4,18 @@ use super::{Config, Formatter};
 
 pub struct ReadableFormatter<'a> {
     record: &'a log::Record<'a>,
-    config: Config,
+    config: &'a Config,
 }
 
 impl ReadableFormatter<'_> {
-    pub fn new<'a>(record: &'a log::Record<'a>, config: Config) -> ReadableFormatter<'a> {
+    pub fn new<'a>(record: &'a log::Record<'a>, config: &'a Config) -> ReadableFormatter<'a> {
         ReadableFormatter { record, config }
     }
 }
 
 impl<'a> Formatter for ReadableFormatter<'a> {
     fn format(&self) -> String {
-        let config = self.config.clone();
-
-        let writer = LogWriter::new(self.record, config);
+        let writer = LogWriter::new(self.record, self.config);
 
         let mut result = String::new();
 

@@ -44,8 +44,7 @@ impl Log for SingleFileLogger {
     }
 
     fn log(&self, record: &log::Record) {
-        let config = self.config.clone();
-        let formatter = DefaultFormatter::new(record, config);
+        let formatter = DefaultFormatter::new(record, &self.config);
 
         let mut file = self.file.lock().unwrap();
         writeln!(file, "{}", formatter.format()).unwrap();

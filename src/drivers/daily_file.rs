@@ -72,9 +72,7 @@ impl Log for DailyFileLogger {
     fn log(&self, record: &log::Record) {
         self.rotate_file_if_needed();
 
-        let config = self.config.clone();
-
-        let formatter = DefaultFormatter::new(record, config);
+        let formatter = DefaultFormatter::new(record, &self.config);
 
         let mut file = self.file.lock().unwrap();
         writeln!(file, "{}", formatter.format()).unwrap();
