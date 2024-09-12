@@ -1,14 +1,10 @@
+use crate::Config;
+
 pub mod default;
 pub mod readable;
 
 pub trait Formatter {
     fn format(&self) -> String;
-}
-
-#[derive(Clone)]
-pub struct Config {
-    pub datetime_format: String,
-    pub timezone: chrono_tz::Tz,
 }
 
 impl Config {

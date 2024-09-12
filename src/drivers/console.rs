@@ -1,6 +1,9 @@
 use log::Log;
 
-use crate::formatters::{default::DefaultFormatter, Config, Formatter};
+use crate::{
+    formatters::{default::DefaultFormatter, Formatter},
+    Config,
+};
 
 /// A logger that logs messages to the console.
 pub struct ConsoleLogger {

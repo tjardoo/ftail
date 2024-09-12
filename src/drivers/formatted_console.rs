@@ -1,6 +1,9 @@
 use log::Log;
 
-use crate::formatters::{readable::ReadableFormatter, Config, Formatter};
+use crate::{
+    formatters::{readable::ReadableFormatter, Formatter},
+    Config,
+};
 
 /// A logger that logs formatted messages to the console.
 pub struct FormattedConsoleLogger {

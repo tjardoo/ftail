@@ -1,6 +1,6 @@
-use crate::{ansi_escape::TextStyling, writer::LogWriter};
+use crate::{ansi_escape::TextStyling, writer::LogWriter, Config};
 
-use super::{Config, Formatter};
+use super::Formatter;
 
 pub struct ReadableFormatter<'a> {
     record: &'a log::Record<'a>,

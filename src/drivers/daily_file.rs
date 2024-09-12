@@ -7,7 +7,8 @@ use std::{
 
 use crate::{
     error::FtailError,
-    formatters::{default::DefaultFormatter, Config, Formatter},
+    formatters::{default::DefaultFormatter, Formatter},
+    Config,
 };
 
 /// A logger that logs messages to a daily log file.

@@ -1,6 +1,6 @@
 use log::Record;
 
-use crate::formatters::Config;
+use crate::Config;
 
 pub(crate) struct LogWriter<'a> {
     record: &'a Record<'a>,

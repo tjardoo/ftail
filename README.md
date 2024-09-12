@@ -135,11 +135,17 @@ Create your own log driver.
 
 ```rust
 Ftail::new()
-    .custom(Box::new(Box::new(CustomLogger {})), LevelFilter::Debug)
+    .custom(
+        |config: ftail::Config| Box::new(CustomLogger { config }) as Box<dyn Log + Send + Sync>,
+        LevelFilter::Debug,
+    )
+    .datetime_format("%H:%M:%S%.3f")
     .init()?;
 
 // the custom logger implementation
-struct CustomLogger {}
+struct CustomLogger {
+    config: Config,
+}
 
 impl Log for CustomLogger {
     fn enabled(&self, _metadata: &log::Metadata) -> bool {
@@ -147,9 +153,11 @@ impl Log for CustomLogger {
     }
 
     fn log(&self, record: &log::Record) {
-        let time = chrono::Local::now().format("%H:%M:%S").to_string();
+        let time = chrono::Local::now()
+            .format(&self.config.datetime_format)
+            .to_string();
 
-        println!("{} {} {}", time, record.level(), record.args());
+        println!("{} [{}] {}", time.black(), record.level().bold(), record.args());
     }
 
     fn flush(&self) {}

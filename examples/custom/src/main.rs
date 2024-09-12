@@ -1,11 +1,15 @@
-use ftail::{ansi_escape::TextStyling, Ftail};
+use ftail::{ansi_escape::TextStyling, Config, Ftail};
 use log::{LevelFilter, Log};
 
 // This example demonstrates how to log messages to stdout with custom styling.
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ftail::new()
-        .custom(Box::new(Box::new(CustomLogger {})), LevelFilter::Debug)
+        .custom(
+            |config: ftail::Config| Box::new(CustomLogger { config }) as Box<dyn Log + Send + Sync>,
+            LevelFilter::Debug,
+        )
+        .datetime_format("%H:%M:%S%.3f")
         .init()?;
 
     log::trace!("This is a trace message");
@@ -21,7 +25,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-struct CustomLogger {}
+struct CustomLogger {
+    config: Config,
+}
 
 impl Log for CustomLogger {
     fn enabled(&self, _metadata: &log::Metadata) -> bool {
@@ -29,7 +35,9 @@ impl Log for CustomLogger {
     }
 
     fn log(&self, record: &log::Record) {
-        let time = chrono::Local::now().format("%H:%M:%S").to_string();
+        let time = chrono::Local::now()
+            .format(&self.config.datetime_format)
+            .to_string();
 
         let level = match record.level() {
             log::Level::Trace => record.level().black().to_string(),

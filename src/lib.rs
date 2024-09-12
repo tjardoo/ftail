@@ -135,11 +135,17 @@
 //!
 //! ```rust
 //! Ftail::new()
-//!     .custom(Box::new(Box::new(CustomLogger {})), LevelFilter::Debug)
+//!     .custom(
+//!         |config: ftail::Config| Box::new(CustomLogger { config }) as Box<dyn Log + Send + Sync>,
+//!         LevelFilter::Debug,
+//!     )
+//!     .datetime_format("%H:%M:%S%.3f")
 //!     .init()?;
 //!
 //! // the custom logger implementation
-//! struct CustomLogger {}
+//! struct CustomLogger {
+//!     config: Config,
+//! }
 //!
 //! impl Log for CustomLogger {
 //!     fn enabled(&self, _metadata: &log::Metadata) -> bool {
@@ -147,9 +153,11 @@
 //!     }
 //!
 //!     fn log(&self, record: &log::Record) {
-//!         let time = chrono::Local::now().format("%H:%M:%S").to_string();
+//!         let time = chrono::Local::now()
+//!             .format(&self.config.datetime_format)
+//!             .to_string();
 //!
-//!         println!("{} {} {}", time, record.level(), record.args());
+//!         println!("{} [{}] {}", time.black(), record.level().bold(), record.args());
 //!     }
 //!
 //!     fn flush(&self) {}
@@ -161,7 +169,6 @@ use drivers::{
     single_file::SingleFileLogger,
 };
 use error::FtailError;
-use formatters::Config;
 use log::Log;
 
 /// Module containing the ANSI escape codes.
@@ -173,15 +180,30 @@ pub mod error;
 mod formatters;
 mod writer;
 
-pub(crate) struct LogDriver {
-    driver: Box<dyn Log>,
-    level: log::LevelFilter,
-}
-
 /// The main struct for configuring the logger.
 pub struct Ftail {
     drivers: Vec<LogDriver>,
+    initialized_drivers: Vec<InitializedLogDriver>,
     config: Config,
+}
+
+unsafe impl Send for Ftail {}
+unsafe impl Sync for Ftail {}
+
+pub(crate) struct LogDriver {
+    constructor: Box<dyn Fn(Config) -> Box<dyn Log + Send + Sync>>,
+    level: log::LevelFilter,
+}
+
+pub(crate) struct InitializedLogDriver {
+    driver: Box<dyn Log + Send + Sync>,
+    level: log::LevelFilter,
+}
+
+#[derive(Clone)]
+pub struct Config {
+    pub datetime_format: String,
+    pub timezone: chrono_tz::Tz,
 }
 
 impl Ftail {
@@ -189,6 +211,7 @@ impl Ftail {
     pub fn new() -> Self {
         Self {
             drivers: Vec::new(),
+            initialized_drivers: Vec::new(),
             config: Config::new(),
         }
     }
@@ -207,68 +230,108 @@ impl Ftail {
         self
     }
 
-    fn add_driver(mut self, driver: Box<dyn Log>, level: log::LevelFilter) -> Self {
-        self.drivers.push(LogDriver { driver, level });
-
+    fn add_driver<F>(mut self, constructor: F, level: log::LevelFilter) -> Self
+    where
+        F: Fn(Config) -> Box<dyn Log + Send + Sync> + 'static,
+    {
+        self.drivers.push(LogDriver::new(constructor, level));
         self
     }
 
     /// Add a driver that logs messages to the console.
     pub fn console(self, level: log::LevelFilter) -> Self {
-        let config = self.config.clone();
+        let constructor =
+            |config: Config| Box::new(ConsoleLogger::new(config)) as Box<dyn Log + Send + Sync>;
 
-        self.add_driver(Box::new(ConsoleLogger::new(config)), level)
+        self.add_driver(constructor, level)
     }
 
     /// Add a driver that logs formatted messages to the console.
     pub fn formatted_console(self, level: log::LevelFilter) -> Self {
-        let config = self.config.clone();
+        let constructor = |config: Config| {
+            Box::new(FormattedConsoleLogger::new(config)) as Box<dyn Log + Send + Sync>
+        };
 
-        self.add_driver(Box::new(FormattedConsoleLogger::new(config)), level)
+        self.add_driver(constructor, level)
     }
 
     /// Add a driver that logs messages to a single file.
     pub fn single_file(self, path: &str, append: bool, level: log::LevelFilter) -> Self {
-        let config = self.config.clone();
+        let path = path.to_string();
 
-        self.add_driver(
-            Box::new(SingleFileLogger::new(path, append, config).unwrap()),
-            level,
-        )
+        let constructor = move |config: Config| {
+            Box::new(SingleFileLogger::new(&path, append, config).unwrap())
+                as Box<dyn Log + Send + Sync>
+        };
+
+        self.add_driver(constructor, level)
     }
 
     /// Add a driver that logs messages to a daily log file.
     pub fn daily_file(self, path: &str, level: log::LevelFilter) -> Self {
-        let config = self.config.clone();
+        let path = path.to_string();
 
-        self.add_driver(Box::new(DailyFileLogger::new(path, config).unwrap()), level)
+        let constructor = move |config: Config| {
+            Box::new(DailyFileLogger::new(&path, config).unwrap()) as Box<dyn Log + Send + Sync>
+        };
+
+        self.add_driver(constructor, level)
     }
 
     /// Add a custom driver.
-    pub fn custom(self, driver: Box<dyn Log>, level: log::LevelFilter) -> Self {
-        self.add_driver(Box::new(driver), level)
+    pub fn custom<F>(self, constructor: F, level: log::LevelFilter) -> Self
+    where
+        F: Fn(Config) -> Box<dyn Log + Send + Sync> + 'static,
+    {
+        self.add_driver(constructor, level)
     }
 
     /// Initialize the logger.
-    pub fn init(self) -> Result<(), FtailError> {
+    pub fn init(mut self) -> Result<(), FtailError> {
         if self.drivers.is_empty() {
             return Err(FtailError::NoDriversError);
         }
+
+        let drivers = std::mem::take(&mut self.drivers);
+
+        self.initialized_drivers = drivers
+            .into_iter()
+            .map(|driver| driver.init(self.config.clone()))
+            .collect();
 
         log::set_max_level(log::LevelFilter::Trace);
         log::set_boxed_logger(Box::new(self)).map_err(FtailError::SetLoggerError)
     }
 }
 
+impl LogDriver {
+    fn new<F>(constructor: F, level: log::LevelFilter) -> Self
+    where
+        F: Fn(Config) -> Box<dyn Log + Send + Sync> + 'static,
+    {
+        Self {
+            constructor: Box::new(constructor),
+            level,
+        }
+    }
+
+    fn init(self, config: Config) -> InitializedLogDriver {
+        InitializedLogDriver {
+            driver: (self.constructor)(config),
+            level: self.level,
+        }
+    }
+}
+
 impl Log for Ftail {
     fn enabled(&self, metadata: &log::Metadata) -> bool {
-        self.drivers
+        self.initialized_drivers
             .iter()
             .any(|driver| metadata.level() <= driver.level && driver.driver.enabled(metadata))
     }
 
     fn log(&self, record: &log::Record) {
-        for driver in &self.drivers {
+        for driver in &self.initialized_drivers {
             if driver.level >= record.level() || driver.level == log::LevelFilter::Off {
                 driver.driver.log(record);
             }
@@ -276,7 +339,7 @@ impl Log for Ftail {
     }
 
     fn flush(&self) {
-        for driver in &self.drivers {
+        for driver in &self.initialized_drivers {
             driver.driver.flush();
         }
     }
