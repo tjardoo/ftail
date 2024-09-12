@@ -7,16 +7,17 @@ use std::{
 
 use crate::{
     error::FtailError,
-    formatters::{default::DefaultFormatter, Formatter},
+    formatters::{default::DefaultFormatter, Config, Formatter},
 };
 
 /// A logger that logs messages to a single log file.
 pub struct SingleFileLogger {
     file: Mutex<LineWriter<File>>,
+    config: Config,
 }
 
 impl SingleFileLogger {
-    pub fn new(path: &str, append: bool) -> Result<Self, FtailError> {
+    pub fn new(path: &str, append: bool, config: Config) -> Result<Self, FtailError> {
         let file = std::fs::OpenOptions::new()
             .create(true)
             .write(true)
@@ -32,6 +33,7 @@ impl SingleFileLogger {
 
         Ok(SingleFileLogger {
             file: Mutex::new(LineWriter::new(file)),
+            config,
         })
     }
 }
@@ -42,7 +44,8 @@ impl Log for SingleFileLogger {
     }
 
     fn log(&self, record: &log::Record) {
-        let formatter = DefaultFormatter::new(record);
+        let config = self.config.clone();
+        let formatter = DefaultFormatter::new(record, config);
 
         let mut file = self.file.lock().unwrap();
         writeln!(file, "{}", formatter.format()).unwrap();

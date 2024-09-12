@@ -7,3 +7,4 @@ publish = false
 [dependencies]
 log = "0.4"
 ftail = { path = "../../../ftail" }
+chrono-tz = "0.10"

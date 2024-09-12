@@ -1,27 +1,30 @@
-use crate::writer::LogWriter;
+use crate::{formatters::Config, writer::LogWriter};
 
 use super::Formatter;
 
 pub struct DefaultFormatter<'a> {
     record: &'a log::Record<'a>,
+    config: Config,
 }
 
 impl DefaultFormatter<'_> {
-    pub fn new<'a>(record: &'a log::Record<'a>) -> DefaultFormatter<'a> {
-        DefaultFormatter { record }
+    pub fn new<'a>(record: &'a log::Record<'a>, config: Config) -> DefaultFormatter<'a> {
+        DefaultFormatter { record, config }
     }
 }
 
 impl<'a> Formatter for DefaultFormatter<'a> {
     fn format(&self) -> String {
-        let writer = LogWriter::new();
+        let config = self.config.clone();
+
+        let writer = LogWriter::new(self.record, config);
 
         format!(
             "{} {} {} {}",
             writer.get_datetime(),
-            writer.get_level(self.record),
-            writer.get_target(self.record),
-            writer.get_args(self.record),
+            writer.get_level(),
+            writer.get_target(),
+            writer.get_args(),
         )
     }
 }

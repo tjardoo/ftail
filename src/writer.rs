@@ -1,33 +1,41 @@
 use log::Record;
 
-pub(crate) struct LogWriter {}
+use crate::formatters::Config;
 
-impl LogWriter {
-    pub fn new() -> Self {
-        Self {}
+pub(crate) struct LogWriter<'a> {
+    record: &'a Record<'a>,
+    config: Config,
+}
+
+impl<'a> LogWriter<'a> {
+    pub fn new(record: &'a Record<'a>, config: Config) -> LogWriter<'a> {
+        LogWriter { record, config }
     }
 
     pub fn get_datetime(&self) -> String {
-        chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string()
+        chrono::Local::now()
+            .with_timezone(&self.config.timezone)
+            .format(&self.config.datetime_format)
+            .to_string()
     }
 
-    pub fn get_level(&self, record: &Record) -> String {
-        record.level().to_string()
+    pub fn get_level(&self) -> String {
+        self.record.level().to_string()
     }
 
-    pub fn get_target(&self, record: &Record) -> String {
-        record.target().to_string()
+    pub fn get_target(&self) -> String {
+        self.record.target().to_string()
     }
 
-    pub fn get_args(&self, record: &Record) -> String {
-        record.args().to_string()
+    pub fn get_args(&self) -> String {
+        self.record.args().to_string()
     }
 
-    pub fn get_file(&self, record: &Record) -> Option<String> {
-        record.file().map(|f| f.to_string())
+    pub fn get_file(&self) -> Option<String> {
+        self.record.file().map(|f| f.to_string())
     }
 
-    pub fn get_line(&self, record: &Record) -> Option<u32> {
-        record.line()
+    pub fn get_line(&self) -> Option<u32> {
+        self.record.line()
     }
 }
