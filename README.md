@@ -2,11 +2,11 @@
 
 Ftail is simple logging implementation for the `log` crate with support for multiple drivers.
 
-- [Console (standard output logging)](#console)
-- [Formatted console (formatted output logging)](#formatted-console)
-- [Single (single log file)](#single)
-- [Daily (daily log rotation)](#daily)
-- [Custom (custom log driver)](#custom)
+- [Console](#console)
+- [Formatted console](#formatted-console)
+- [Single](#single)
+- [Daily](#daily)
+- [Custom](#custom)
 
 ## Usage
 
@@ -15,7 +15,7 @@ use ftail::Ftail;
 use log::LevelFilter;
 
 Ftail::new()
-    .stdout(LevelFilter::Trace)
+    .console(LevelFilter::Debug)
     .init()?;
 
 log::debug!("This is a debug message");
@@ -84,7 +84,7 @@ examples\console\src/main.rs:16
 
 ### Single
 
-Logs to a single file.
+Logs to the single log file `logs/demo.log`.
 
 The `single` driver takes the following parameters:
 
@@ -100,7 +100,7 @@ Ftail::new()
 
 ### Daily
 
-Logs to a daily log file.
+Logs to a daily log file in the `logs` directory.
 
 The `daily` driver takes the following parameters:
 
