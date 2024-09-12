@@ -1,10 +1,12 @@
 use ftail::Ftail;
 use log::LevelFilter;
 
+// This example demonstrates how to log messages to different files based on their log level.
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ftail::new()
-        .stdout(LevelFilter::Trace)
-        .console(LevelFilter::Trace)
+        .single("logs/trace.log", true, LevelFilter::Trace)
+        .single("logs/error.log", true, LevelFilter::Error)
         .init()?;
 
     log::trace!("This is a trace message");
@@ -15,6 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     log::warn!("This is a warning message");
 
+    // the `error.log` will only contain this message
     log::error!("This is an error message");
 
     Ok(())

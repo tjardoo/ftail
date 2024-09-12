@@ -5,30 +5,34 @@ use std::{
     sync::Mutex,
 };
 
-use crate::formatters::{default::DefaultFormatter, Formatter};
+use crate::{
+    error::FtailError,
+    formatters::{default::DefaultFormatter, Formatter},
+};
 
+/// A logger that logs messages to a single log file.
 pub struct SingleLogger {
     file: Mutex<LineWriter<File>>,
 }
 
 impl SingleLogger {
-    pub fn new(path: &str, append: bool) -> Self {
+    pub fn new(path: &str, append: bool) -> Result<Self, FtailError> {
         let file = std::fs::OpenOptions::new()
             .create(true)
             .write(true)
             .append(append)
             .open(path)
-            .unwrap();
+            .map_err(FtailError::IoError)?;
 
-        let md = std::fs::metadata(path).unwrap();
+        let md = std::fs::metadata(path).map_err(FtailError::IoError)?;
 
         if md.permissions().readonly() {
-            panic!("The logs directory `{path}` is readonly");
+            return Err(FtailError::PermissionsError(path.to_string()));
         }
 
-        SingleLogger {
+        Ok(SingleLogger {
             file: Mutex::new(LineWriter::new(file)),
-        }
+        })
     }
 }
 

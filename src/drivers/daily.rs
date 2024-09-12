@@ -5,8 +5,12 @@ use std::{
     sync::Mutex,
 };
 
-use crate::formatters::{default::DefaultFormatter, Formatter};
+use crate::{
+    error::FtailError,
+    formatters::{default::DefaultFormatter, Formatter},
+};
 
+/// A logger that logs messages to a daily log file.
 pub struct DailyLogger {
     file: Mutex<LineWriter<File>>,
     dir: String,
@@ -14,7 +18,7 @@ pub struct DailyLogger {
 }
 
 impl DailyLogger {
-    pub fn new(dir: &str) -> Self {
+    pub fn new(dir: &str) -> Result<Self, FtailError> {
         let today = chrono::Local::now().format("%Y-%m-%d").to_string();
         let path = format!("{}/{}.log", dir, today);
 
@@ -22,19 +26,19 @@ impl DailyLogger {
             .create(true)
             .append(true)
             .open(path)
-            .unwrap();
+            .map_err(FtailError::IoError)?;
 
-        let md = std::fs::metadata(dir).unwrap();
+        let md = std::fs::metadata(dir).map_err(FtailError::IoError)?;
 
         if md.permissions().readonly() {
-            panic!("The logs directory `{dir}` is readonly");
+            return Err(FtailError::PermissionsError(dir.to_string()));
         }
 
-        DailyLogger {
+        Ok(DailyLogger {
             file: Mutex::new(LineWriter::new(file)),
             dir: dir.to_string(),
             current_date: Mutex::new(today),
-        }
+        })
     }
 
     fn rotate_file_if_needed(&self) {

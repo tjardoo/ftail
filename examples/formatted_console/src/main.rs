@@ -1,8 +1,10 @@
 use ftail::Ftail;
 use log::LevelFilter;
 
+// This example demonstrates how to log formatted messages to the console.
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    Ftail::new().stdout(LevelFilter::Trace).init()?;
+    Ftail::new().formatted_console(LevelFilter::Trace).init()?;
 
     log::trace!("This is a trace message");
 

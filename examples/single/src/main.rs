@@ -1,6 +1,8 @@
 use ftail::Ftail;
 use log::LevelFilter;
 
+// This example demonstrates how to log messages to a single file in the logs directory.
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ftail::new()
         .single("logs/demo.log", true, LevelFilter::Trace)

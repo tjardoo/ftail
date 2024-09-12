@@ -14,9 +14,9 @@ chrono = "0.4"
 [workspace]
 members = [
     "examples/console",
-    "examples/custom",
-    "examples/daily",
+    "examples/formatted_console",
     "examples/single",
+    "examples/daily",
     "examples/stack",
-    "examples/stdout",
+    "examples/custom",
 ]

@@ -2,8 +2,8 @@
 
 Ftail is simple logging implementation for the `log` crate with support for multiple drivers.
 
-- [Stdout (standard output logging)](#stdout)
-- [Console (formatted output logging)](#console)
+- [Console (standard output logging)](#console)
+- [Formatted console (formatted output logging)](#formatted-console)
 - [Single (single log file)](#single)
 - [Daily (daily log rotation)](#daily)
 - [Custom (custom log driver)](#custom)
@@ -24,9 +24,9 @@ log::info!("This is an info message");
 
 ## Drivers
 
-### Stdout
+### Console
 
-Logs to the standard output.
+Logs to the standard output without any formatting.
 
 The `stdout` driver takes the following parameters:
 
@@ -34,7 +34,7 @@ The `stdout` driver takes the following parameters:
 
 ```rust
 Ftail::new()
-    .stdout(LevelFilter::Trace)
+    .console(LevelFilter::Trace)
     .init()?;
 ```
 
@@ -46,7 +46,7 @@ Ftail::new()
 2024-09-10 14:41:57 ERROR stdout This is an error message
 ```
 
-### Console
+### Formatted Console
 
 Logs to the standard output with formatted and colored output.
 
@@ -56,7 +56,7 @@ The `console` driver takes the following parameters:
 
 ```rust
 Ftail::new()
-    .console(LevelFilter::Trace)
+    .formatted_console(LevelFilter::Trace)
     .init()?;
 ```
 
@@ -116,6 +116,8 @@ Ftail::new()
 ### Custom
 
 Create your own log driver.
+
+You can add text formatting, by using the `use ftail::ansi_escape::TextStyling;` module.
 
 ```rust
 Ftail::new()

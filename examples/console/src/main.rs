@@ -1,8 +1,10 @@
 use ftail::Ftail;
 use log::LevelFilter;
 
+// This example demonstrates how to log messages to stdout.
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    Ftail::new().console(LevelFilter::Trace).init()?;
+    Ftail::new().console(LevelFilter::Off).init()?;
 
     log::trace!("This is a trace message");
 

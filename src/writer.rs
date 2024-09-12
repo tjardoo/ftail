@@ -1,6 +1,6 @@
 use log::Record;
 
-pub struct LogWriter {}
+pub(crate) struct LogWriter {}
 
 impl LogWriter {
     pub fn new() -> Self {

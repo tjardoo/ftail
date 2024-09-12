@@ -1,5 +1,7 @@
-use ftail::Ftail;
+use ftail::{ansi_escape::TextStyling, Ftail};
 use log::{LevelFilter, Log};
+
+// This example demonstrates how to log messages to stdout with custom styling.
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ftail::new()
@@ -29,7 +31,15 @@ impl Log for CustomLogger {
     fn log(&self, record: &log::Record) {
         let time = chrono::Local::now().format("%H:%M:%S").to_string();
 
-        println!("{} {} {}", time, record.level(), record.args());
+        let level = match record.level() {
+            log::Level::Trace => record.level().black().to_string(),
+            log::Level::Debug => record.level().blue().to_string(),
+            log::Level::Info => record.level().green().to_string(),
+            log::Level::Warn => record.level().yellow().to_string(),
+            log::Level::Error => record.level().red().to_string(),
+        };
+
+        println!("{} [{}] {}", time.black(), level.bold(), record.args());
     }
 
     fn flush(&self) {}

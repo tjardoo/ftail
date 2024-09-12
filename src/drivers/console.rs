@@ -1,7 +1,8 @@
 use log::Log;
 
-use crate::formatters::{readable::ReadableFormatter, Formatter};
+use crate::formatters::{default::DefaultFormatter, Formatter};
 
+/// A logger that logs messages to the console.
 pub struct ConsoleLogger {}
 
 impl Log for ConsoleLogger {
@@ -10,7 +11,7 @@ impl Log for ConsoleLogger {
     }
 
     fn log(&self, record: &log::Record) {
-        let formatter = ReadableFormatter::new(record);
+        let formatter = DefaultFormatter::new(record);
 
         println!("{}", formatter.format());
     }
