@@ -14,7 +14,6 @@
 //!
 //! ```toml
 //! [dependencies]
-//! log = "0.4"
 //! ftail = "0.1"
 //! ```
 //!
@@ -54,12 +53,12 @@
 //!     .init()?;
 //! ```
 //!
-//! ```log
-//! 2024-09-10 14:41:57 TRACE stdout This is a trace message
-//! 2024-09-10 14:41:57 DEBUG stdout This is a debug message
-//! 2024-09-10 14:41:57 INFO foo bar
-//! 2024-09-10 14:41:57 WARN stdout This is a warning message
-//! 2024-09-10 14:41:57 ERROR stdout This is an error message
+//! ```sh
+//! 13-09-2024 17:35:18 TRACE console This is a trace message
+//! 13-09-2024 17:35:18 DEBUG console This is a debug message
+//! 13-09-2024 17:35:18 INFO foo bar
+//! 13-09-2024 17:35:18 WARN console This is a warning message
+//! 13-09-2024 17:35:18 ERROR console This is an error message
 //! ```
 //!
 //! ### Formatted Console
@@ -76,26 +75,26 @@
 //!     .init()?;
 //! ```
 //!
-//! ```log
-//! 2024-09-10 14:42:21 · TRACE
+//! ```sh
+//! 2024-09-13 17:35:37 · TRACE
 //! This is a trace message
-//! examples\console\src/main.rs:8
+//! examples\formatted_console\src/main.rs:9
 //!
-//! 2024-09-10 14:42:21 · DEBUG
+//! 2024-09-13 17:35:37 · DEBUG
 //! This is a debug message
-//! examples\console\src/main.rs:10
+//! examples\formatted_console\src/main.rs:11
 //!
-//! 2024-09-10 14:42:21 · INFO
+//! 2024-09-13 17:35:37 · INFO
 //! bar
-//! examples\console\src/main.rs:12
+//! examples\formatted_console\src/main.rs:13
 //!
-//! 2024-09-10 14:42:21 · WARN
+//! 2024-09-13 17:35:37 · WARN
 //! This is a warning message
-//! examples\console\src/main.rs:14
+//! examples\formatted_console\src/main.rs:15
 //!
-//! 2024-09-10 14:42:21 · ERROR
+//! 2024-09-13 17:35:37 · ERROR
 //! This is an error message
-//! examples\console\src/main.rs:16
+//! examples\formatted_console\src/main.rs:17
 //! ```
 //!
 //! ### Single file
@@ -116,7 +115,7 @@
 //!
 //! ### Daily file
 //!
-//! Logs to a daily log file in the `logs` directory.
+//! Logs to a daily log file in the `logs` directory. The log files have the following format: `YYYY-MM-DD.log`.
 //!
 //! The `daily_file` driver takes the following parameters:
 //!
@@ -163,6 +162,13 @@
 //!     fn flush(&self) {}
 //! }
 //! ```
+//!
+//! ```sh
+//! 19:37:22.402 [DEBUG] This is a debug message
+//! 19:37:22.403 [INFO] bar
+//! 19:37:22.403 [WARN] This is a warning message
+//! 19:37:22.403 [ERROR] This is an error message
+//! ```
 
 use drivers::{
     console::ConsoleLogger, daily_file::DailyFileLogger, formatted_console::FormattedConsoleLogger,
@@ -200,6 +206,7 @@ pub(crate) struct InitializedLogDriver {
     level: log::LevelFilter,
 }
 
+/// The configuration struct for the logger. Required for custom drivers.
 #[derive(Clone)]
 pub struct Config {
     pub datetime_format: String,

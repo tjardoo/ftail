@@ -3,9 +3,9 @@ name = "ftail"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-description = "Ftail is a simple logging library for Rust"
+description = "Ftail is simple logging implementation for the `log` crate with support for multiple drivers."
 repository = "https://github.com/tjardoo/ftail"
-keywords = ["log", "logging"]
+keywords = ["log", "logging", "filelog"]
 
 [dependencies]
 log = { version = "0.4", features = ["std"] }
