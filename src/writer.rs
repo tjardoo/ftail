@@ -13,10 +13,16 @@ impl<'a> LogWriter<'a> {
     }
 
     pub fn get_datetime(&self) -> String {
-        chrono::Local::now()
+        #[cfg(not(feature = "timezone"))]
+        return chrono::Local::now()
+            .format(&self.config.datetime_format)
+            .to_string();
+
+        #[cfg(feature = "timezone")]
+        return chrono::Local::now()
             .with_timezone(&self.config.timezone)
             .format(&self.config.datetime_format)
-            .to_string()
+            .to_string();
     }
 
     pub fn get_level(&self) -> String {
