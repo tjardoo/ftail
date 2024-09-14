@@ -24,7 +24,6 @@
 //! use log::LevelFilter;
 //!
 //! Ftail::new()
-//!     .timezone(chrono_tz::Europe::Amsterdam) // optional (default is UTC)
 //!     .console(LevelFilter::Debug)
 //!     .daily_file("logs", LevelFilter::Error)
 //!     .init()?;
@@ -36,6 +35,11 @@
 //! log::warn!("This is a warning message");
 //! log::error!("This is an error message");
 //! ```
+//!
+//! You can set the following configuration options:
+//!
+//! - `.datetime_format("%Y-%m-%d %H:%M:%S.3f")` to set the datetime format
+//! - `.timezone(ftail::Tz::UTC)` to set the timezone [requires feature `timezone`]
 //!
 //! ## Drivers
 //!
@@ -177,6 +181,9 @@ use drivers::{
 use error::FtailError;
 use log::Log;
 
+#[cfg(feature = "timezone")]
+pub use chrono_tz::Tz;
+
 /// Module containing the ANSI escape codes.
 pub mod ansi_escape;
 /// Module containing the drivers.
@@ -210,6 +217,7 @@ pub(crate) struct InitializedLogDriver {
 #[derive(Clone)]
 pub struct Config {
     pub datetime_format: String,
+    #[cfg(feature = "timezone")]
     pub timezone: chrono_tz::Tz,
 }
 
@@ -223,6 +231,7 @@ impl Ftail {
         }
     }
 
+    #[cfg(feature = "timezone")]
     /// Set the timezone for the logger.
     pub fn timezone(mut self, timezone: chrono_tz::Tz) -> Self {
         self.config.timezone = timezone;

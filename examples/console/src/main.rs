@@ -5,8 +5,8 @@ use log::LevelFilter;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ftail::new()
-        .timezone(chrono_tz::UTC)
-        // .timezone(chrono_tz::Europe::Amsterdam)
+        // .timezone(ftail::Tz::UTC)
+        .timezone(ftail::Tz::Europe__Amsterdam)
         .datetime_format("%d-%m-%Y %H:%M:%S")
         .console(LevelFilter::Off)
         .init()?;
