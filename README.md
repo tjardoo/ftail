@@ -24,7 +24,6 @@ use ftail::Ftail;
 use log::LevelFilter;
 
 Ftail::new()
-    .timezone(chrono_tz::Europe::Amsterdam) // optional (default is UTC)
     .console(LevelFilter::Debug)
     .daily_file("logs", LevelFilter::Error)
     .init()?;
@@ -36,6 +35,11 @@ log::info!(target: "foo", "bar");
 log::warn!("This is a warning message");
 log::error!("This is an error message");
 ```
+
+You can set the following configuration options:
+
+- `.datetime_format("%Y-%m-%d %H:%M:%S.3f")` to set the datetime format
+- `.timezone(ftail::Tz::UTC)` to set the timezone [requires feature `timezone`]
 
 ## Drivers
 

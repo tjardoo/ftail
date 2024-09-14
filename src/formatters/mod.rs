@@ -11,6 +11,7 @@ impl Config {
     pub fn new() -> Config {
         Config {
             datetime_format: "%Y-%m-%d %H:%M:%S".to_string(),
+            #[cfg(feature = "timezone")]
             timezone: chrono_tz::Tz::UTC,
         }
     }
