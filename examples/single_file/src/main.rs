@@ -6,6 +6,7 @@ use log::LevelFilter;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ftail::new()
         .single_file("logs/demo.log", true, LevelFilter::Trace)
+        .max_file_size(10)
         .init()?;
 
     log::trace!("This is a trace message");

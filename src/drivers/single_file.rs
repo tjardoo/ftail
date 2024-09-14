@@ -2,18 +2,21 @@ use log::Log;
 use std::{
     fs::File,
     io::{LineWriter, Write},
+    path::PathBuf,
     sync::Mutex,
 };
 
 use crate::{
     error::FtailError,
     formatters::{default::DefaultFormatter, Formatter},
+    helpers::rotate_if_exceeds_max_file_size,
     Config,
 };
 
 /// A logger that logs messages to a single log file.
 pub struct SingleFileLogger {
     file: Mutex<LineWriter<File>>,
+    file_path: PathBuf,
     config: Config,
 }
 
@@ -34,6 +37,7 @@ impl SingleFileLogger {
 
         Ok(SingleFileLogger {
             file: Mutex::new(LineWriter::new(file)),
+            file_path: PathBuf::from(path),
             config,
         })
     }
@@ -45,6 +49,8 @@ impl Log for SingleFileLogger {
     }
 
     fn log(&self, record: &log::Record) {
+        rotate_if_exceeds_max_file_size(&self.file, self.file_path.clone(), &self.config);
+
         let formatter = DefaultFormatter::new(record, &self.config);
 
         let mut file = self.file.lock().unwrap();
