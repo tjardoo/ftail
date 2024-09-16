@@ -41,6 +41,8 @@
 //! - `.datetime_format("%Y-%m-%d %H:%M:%S.3f")` to set the datetime format
 //! - `.timezone(ftail::Tz::UTC)` to set the timezone [requires feature `timezone`]
 //! - `.max_file_size(100)` to set the maximum file size in MB (will move older logs to .old{N})
+//! - `.filter_levels(vec![Level::Debug, Level::Error])` only log messages with the specified levels
+//! - `.filter_targets(vec!["foo", "bar"])` only log messages with the specified targets
 //!
 //! ## Drivers
 //!
@@ -180,7 +182,7 @@ use drivers::{
     single_file::SingleFileLogger,
 };
 use error::FtailError;
-use log::Log;
+use log::{Level, Log};
 
 #[cfg(feature = "timezone")]
 pub use chrono_tz::Tz;
@@ -222,6 +224,8 @@ pub struct Config {
     #[cfg(feature = "timezone")]
     pub timezone: chrono_tz::Tz,
     pub max_file_size: Option<u64>,
+    pub level_filters: Option<Vec<Level>>,
+    pub target_filters: Option<Vec<String>>,
 }
 
 impl Ftail {
@@ -252,6 +256,20 @@ impl Ftail {
     /// Set the maximum file size for the logger.
     pub fn max_file_size(mut self, max_file_size_in_mb: u64) -> Self {
         self.config.max_file_size = Some(max_file_size_in_mb * 1024 * 1024);
+
+        self
+    }
+
+    /// Only log messages with the specified levels. The default is to log all levels.
+    pub fn filter_levels(mut self, level_filters: Vec<Level>) -> Self {
+        self.config.level_filters = Some(level_filters);
+
+        self
+    }
+
+    /// Only log messages with the specified targets. The default is to log all targets.
+    pub fn filter_targets(mut self, target_filters: Vec<&str>) -> Self {
+        self.config.target_filters = Some(target_filters.iter().map(|s| s.to_string()).collect());
 
         self
     }
@@ -358,6 +376,31 @@ impl Log for Ftail {
 
     fn log(&self, record: &log::Record) {
         for driver in &self.initialized_drivers {
+            // Skip the record if the level is not in the level filters
+            if self.config.level_filters.is_some()
+                && !self
+                    .config
+                    .level_filters
+                    .as_ref()
+                    .unwrap()
+                    .contains(&record.level())
+            {
+                continue;
+            }
+
+            // Skip the record if the target is not in the target filters
+            if self.config.target_filters.is_some()
+                && !self
+                    .config
+                    .target_filters
+                    .as_ref()
+                    .unwrap()
+                    .contains(&record.target().to_string())
+            {
+                continue;
+            }
+
+            // Skip the record if the level is lower than the driver level
             if driver.level >= record.level() || driver.level == log::LevelFilter::Off {
                 driver.driver.log(record);
             }
