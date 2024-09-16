@@ -40,6 +40,7 @@
 //!
 //! - `.datetime_format("%Y-%m-%d %H:%M:%S.3f")` to set the datetime format
 //! - `.timezone(ftail::Tz::UTC)` to set the timezone [requires feature `timezone`]
+//! - `.max_file_size(100)` to set the maximum file size in MB (will move older logs to .old{N})
 //!
 //! ## Drivers
 //!
@@ -191,6 +192,7 @@ pub mod drivers;
 /// Module containing the error type.
 pub mod error;
 mod formatters;
+mod helpers;
 mod writer;
 
 /// The main struct for configuring the logger.
@@ -219,6 +221,7 @@ pub struct Config {
     pub datetime_format: String,
     #[cfg(feature = "timezone")]
     pub timezone: chrono_tz::Tz,
+    pub max_file_size: Option<u64>,
 }
 
 impl Ftail {
@@ -242,6 +245,13 @@ impl Ftail {
     /// Set the datetime format for the logger.
     pub fn datetime_format(mut self, datetime_format: &str) -> Self {
         self.config.datetime_format = datetime_format.to_string();
+
+        self
+    }
+
+    /// Set the maximum file size for the logger.
+    pub fn max_file_size(mut self, max_file_size_in_mb: u64) -> Self {
+        self.config.max_file_size = Some(max_file_size_in_mb * 1024 * 1024);
 
         self
     }

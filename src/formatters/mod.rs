@@ -13,6 +13,7 @@ impl Config {
             datetime_format: "%Y-%m-%d %H:%M:%S".to_string(),
             #[cfg(feature = "timezone")]
             timezone: chrono_tz::Tz::UTC,
+            max_file_size: None,
         }
     }
 }

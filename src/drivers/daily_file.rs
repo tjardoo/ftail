@@ -2,18 +2,21 @@ use log::Log;
 use std::{
     fs::File,
     io::{LineWriter, Write},
+    path::PathBuf,
     sync::Mutex,
 };
 
 use crate::{
     error::FtailError,
     formatters::{default::DefaultFormatter, Formatter},
+    helpers::rotate_if_exceeds_max_file_size,
     Config,
 };
 
 /// A logger that logs messages to a daily log file.
 pub struct DailyFileLogger {
     file: Mutex<LineWriter<File>>,
+    file_path: PathBuf,
     dir: String,
     current_date: Mutex<String>,
     config: Config,
@@ -27,7 +30,7 @@ impl DailyFileLogger {
         let file = std::fs::OpenOptions::new()
             .create(true)
             .append(true)
-            .open(path)
+            .open(&path)
             .map_err(FtailError::IoError)?;
 
         let md = std::fs::metadata(dir).map_err(FtailError::IoError)?;
@@ -38,13 +41,14 @@ impl DailyFileLogger {
 
         Ok(DailyFileLogger {
             file: Mutex::new(LineWriter::new(file)),
+            file_path: PathBuf::from(path),
             dir: dir.to_string(),
             current_date: Mutex::new(today),
             config,
         })
     }
 
-    fn rotate_file_if_needed(&self) {
+    fn rotate_daily_file(&self) {
         let today = chrono::Local::now().format("%Y-%m-%d").to_string();
         let mut current_date = self.current_date.lock().unwrap();
 
@@ -71,7 +75,8 @@ impl Log for DailyFileLogger {
     }
 
     fn log(&self, record: &log::Record) {
-        self.rotate_file_if_needed();
+        rotate_if_exceeds_max_file_size(&self.file, self.file_path.clone(), &self.config);
+        self.rotate_daily_file();
 
         let formatter = DefaultFormatter::new(record, &self.config);
 

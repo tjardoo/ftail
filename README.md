@@ -40,6 +40,7 @@ You can set the following configuration options:
 
 - `.datetime_format("%Y-%m-%d %H:%M:%S.3f")` to set the datetime format
 - `.timezone(ftail::Tz::UTC)` to set the timezone [requires feature `timezone`]
+- `.max_file_size(100)` to set the maximum file size in MB (will move older logs to .old{N})
 
 ## Drivers
 
