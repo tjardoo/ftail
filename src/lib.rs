@@ -41,6 +41,8 @@
 //! - `.datetime_format("%Y-%m-%d %H:%M:%S.3f")` to set the datetime format
 //! - `.timezone(ftail::Tz::UTC)` to set the timezone [requires feature `timezone`]
 //! - `.max_file_size(100)` to set the maximum file size in MB (will move older logs to .old{N})
+//! - `.filter_levels(vec![Level::Debug, Level::Error])` only log messages with the specified levels
+//! - `.filter_targets(vec!["foo", "bar"])` only log messages with the specified targets
 //!
 //! ## Drivers
 //!
@@ -152,11 +154,19 @@
 //! }
 //!
 //! impl Log for CustomLogger {
-//!     fn enabled(&self, _metadata: &log::Metadata) -> bool {
-//!         true
+//!     fn enabled(&self, metadata: &log::Metadata) -> bool {
+//!         if self.config.level_filter == LevelFilter::Off {
+//!             return true;
+//!         }
+//!
+//!         metadata.level() <= self.config.level_filter
 //!     }
 //!
 //!     fn log(&self, record: &log::Record) {
+//!         if !self.enabled(record.metadata()) {
+//!             return;
+//!         }
+//!
 //!         let time = chrono::Local::now()
 //!             .format(&self.config.datetime_format)
 //!             .to_string();
@@ -180,7 +190,7 @@ use drivers::{
     single_file::SingleFileLogger,
 };
 use error::FtailError;
-use log::Log;
+use log::{Level, LevelFilter, Log};
 
 #[cfg(feature = "timezone")]
 pub use chrono_tz::Tz;
@@ -193,6 +203,8 @@ pub mod drivers;
 pub mod error;
 mod formatters;
 mod helpers;
+#[cfg(test)]
+mod tests;
 mod writer;
 
 /// The main struct for configuring the logger.
@@ -212,16 +224,18 @@ pub(crate) struct LogDriver {
 
 pub(crate) struct InitializedLogDriver {
     driver: Box<dyn Log + Send + Sync>,
-    level: log::LevelFilter,
 }
 
 /// The configuration struct for the logger. Required for custom drivers.
 #[derive(Clone)]
 pub struct Config {
+    pub level_filter: LevelFilter,
     pub datetime_format: String,
     #[cfg(feature = "timezone")]
     pub timezone: chrono_tz::Tz,
     pub max_file_size: Option<u64>,
+    pub levels: Option<Vec<Level>>,
+    pub targets: Option<Vec<String>>,
 }
 
 impl Ftail {
@@ -252,6 +266,20 @@ impl Ftail {
     /// Set the maximum file size for the logger.
     pub fn max_file_size(mut self, max_file_size_in_mb: u64) -> Self {
         self.config.max_file_size = Some(max_file_size_in_mb * 1024 * 1024);
+
+        self
+    }
+
+    /// Only log messages with the specified levels. The default is to log all levels.
+    pub fn filter_levels(mut self, levels: Vec<Level>) -> Self {
+        self.config.levels = Some(levels);
+
+        self
+    }
+
+    /// Only log messages with the specified targets. The default is to log all targets.
+    pub fn filter_targets(mut self, targets: Vec<&str>) -> Self {
+        self.config.targets = Some(targets.iter().map(|s| s.to_string()).collect());
 
         self
     }
@@ -322,7 +350,12 @@ impl Ftail {
 
         self.initialized_drivers = drivers
             .into_iter()
-            .map(|driver| driver.init(self.config.clone()))
+            .map(|driver| {
+                let mut config = self.config.clone();
+                config.level_filter = driver.level;
+
+                driver.init(config)
+            })
             .collect();
 
         log::set_max_level(log::LevelFilter::Trace);
@@ -344,23 +377,44 @@ impl LogDriver {
     fn init(self, config: Config) -> InitializedLogDriver {
         InitializedLogDriver {
             driver: (self.constructor)(config),
-            level: self.level,
         }
     }
 }
 
 impl Log for Ftail {
     fn enabled(&self, metadata: &log::Metadata) -> bool {
-        self.initialized_drivers
-            .iter()
-            .any(|driver| metadata.level() <= driver.level && driver.driver.enabled(metadata))
+        if self.config.levels.is_some()
+            && !self
+                .config
+                .levels
+                .as_ref()
+                .unwrap()
+                .contains(&metadata.level())
+        {
+            return false;
+        }
+
+        if self.config.targets.is_some()
+            && !self
+                .config
+                .targets
+                .as_ref()
+                .unwrap()
+                .contains(&metadata.target().to_string())
+        {
+            return false;
+        }
+
+        true
     }
 
     fn log(&self, record: &log::Record) {
+        if !self.enabled(record.metadata()) {
+            return;
+        }
+
         for driver in &self.initialized_drivers {
-            if driver.level >= record.level() || driver.level == log::LevelFilter::Off {
-                driver.driver.log(record);
-            }
+            driver.driver.log(record);
         }
     }
 
