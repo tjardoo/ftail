@@ -21,6 +21,9 @@ fn remove_datetime_from_message(message: String, config: Config) -> String {
     message[len..].to_string()
 }
 
+// The `log` crate allow only one logger to be set. When running `cargo test` multiple tests are run concurrently.
+// This causes the logger to be set multiple times which results in a panic. To avoid this, we need to run the tests invidually.
+
 #[allow(clippy::module_inception)]
 #[cfg(test)]
 mod tests {

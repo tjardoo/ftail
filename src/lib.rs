@@ -154,11 +154,19 @@
 //! }
 //!
 //! impl Log for CustomLogger {
-//!     fn enabled(&self, _metadata: &log::Metadata) -> bool {
-//!         true
+//!     fn enabled(&self, metadata: &log::Metadata) -> bool {
+//!         if self.config.level_filter == LevelFilter::Off {
+//!             return true;
+//!         }
+//!
+//!         metadata.level() <= self.config.level_filter
 //!     }
 //!
 //!     fn log(&self, record: &log::Record) {
+//!         if !self.enabled(record.metadata()) {
+//!             return;
+//!         }
+//!
 //!         let time = chrono::Local::now()
 //!             .format(&self.config.datetime_format)
 //!             .to_string();
