@@ -68,6 +68,11 @@ mod tests {
         }
 
         if let Some(targets) = targets {
+            let targets = targets
+                .iter()
+                .map(|target| target.as_str())
+                .collect::<Vec<&str>>();
+
             ftail = ftail.filter_targets(targets);
         }
 

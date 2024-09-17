@@ -270,8 +270,8 @@ impl Ftail {
     }
 
     /// Only log messages with the specified targets. The default is to log all targets.
-    pub fn filter_targets(mut self, targets: Vec<String>) -> Self {
-        self.config.targets = Some(targets);
+    pub fn filter_targets(mut self, targets: Vec<&str>) -> Self {
+        self.config.targets = Some(targets.iter().map(|s| s.to_string()).collect());
 
         self
     }

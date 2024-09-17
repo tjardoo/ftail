@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             // Level::Warn,
             Level::Error,
         ]) // optional
-        .filter_targets(vec!["foo".to_string()]) // optional
+        .filter_targets(vec!["foo"]) // optional
         .init()?;
 
     log::trace!("This is a trace message");
