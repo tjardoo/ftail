@@ -41,6 +41,8 @@ You can set the following configuration options:
 - `.datetime_format("%Y-%m-%d %H:%M:%S.3f")` to set the datetime format
 - `.timezone(ftail::Tz::UTC)` to set the timezone [requires feature `timezone`]
 - `.max_file_size(100)` to set the maximum file size in MB (will move older logs to .old{N})
+- `.filter_levels(vec![Level::Debug, Level::Error])` only log messages with the specified levels
+- `.filter_targets(vec!["foo", "bar"])` only log messages with the specified targets
 
 ## Drivers
 
@@ -152,11 +154,19 @@ struct CustomLogger {
 }
 
 impl Log for CustomLogger {
-    fn enabled(&self, _metadata: &log::Metadata) -> bool {
-        true
+    fn enabled(&self, metadata: &log::Metadata) -> bool {
+        if self.config.level_filter == LevelFilter::Off {
+            return true;
+        }
+
+        metadata.level() <= self.config.level_filter
     }
 
     fn log(&self, record: &log::Record) {
+        if !self.enabled(record.metadata()) {
+            return;
+        }
+
         let time = chrono::Local::now()
             .format(&self.config.datetime_format)
             .to_string();

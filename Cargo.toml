@@ -5,6 +5,7 @@ edition = "2021"
 license = "MIT"
 description = "Ftail is simple logging implementation for the `log` crate with support for multiple drivers."
 repository = "https://github.com/tjardoo/ftail"
+documentation = "https://docs.rs/ftail"
 keywords = ["log", "logging", "filelog"]
 
 [dependencies]
@@ -16,6 +17,9 @@ chrono-tz = { version = "0.10", optional = true }
 default = []
 timezone = ["chrono-tz"]
 
+[dev-dependencies]
+ftail = { path = ".", features = ["timezone"] }
+
 [workspace]
 members = [
     "examples/console",
@@ -25,3 +29,6 @@ members = [
     "examples/stack",
     "examples/custom",
 ]
+
+[lib]
+doctest = false

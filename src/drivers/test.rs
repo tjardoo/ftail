@@ -1,22 +1,26 @@
-use log::{LevelFilter, Log};
-
 use crate::{
     formatters::{default::DefaultFormatter, Formatter},
     Config,
 };
+use log::{LevelFilter, Log};
+use std::sync::{Arc, Mutex};
 
-/// A logger that logs messages to the console.
-pub struct ConsoleLogger {
-    config: Config,
+pub struct TestLogger {
+    pub buffer: Arc<Mutex<Vec<String>>>,
+    pub config: Config,
 }
 
-impl ConsoleLogger {
+impl TestLogger {
+    #[cfg(test)]
     pub fn new(config: Config) -> Self {
-        ConsoleLogger { config }
+        TestLogger {
+            buffer: Arc::new(Mutex::new(Vec::new())),
+            config,
+        }
     }
 }
 
-impl Log for ConsoleLogger {
+impl Log for TestLogger {
     fn enabled(&self, metadata: &log::Metadata) -> bool {
         if self.config.level_filter == LevelFilter::Off {
             return true;
@@ -32,7 +36,8 @@ impl Log for ConsoleLogger {
 
         let formatter = DefaultFormatter::new(record, &self.config);
 
-        println!("{}", formatter.format());
+        let mut buffer = self.buffer.lock().unwrap();
+        buffer.push(formatter.format());
     }
 
     fn flush(&self) {}
