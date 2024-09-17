@@ -3,4 +3,4 @@ pub mod daily_file;
 pub mod formatted_console;
 pub mod single_file;
 #[cfg(test)]
-mod test;
+pub mod test;

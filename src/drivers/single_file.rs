@@ -1,4 +1,4 @@
-use log::Log;
+use log::{LevelFilter, Log};
 use std::{
     fs::File,
     io::{LineWriter, Write},
@@ -44,11 +44,19 @@ impl SingleFileLogger {
 }
 
 impl Log for SingleFileLogger {
-    fn enabled(&self, _metadata: &log::Metadata) -> bool {
-        true
+    fn enabled(&self, metadata: &log::Metadata) -> bool {
+        if self.config.level_filter == LevelFilter::Off {
+            return true;
+        }
+
+        metadata.level() <= self.config.level_filter
     }
 
     fn log(&self, record: &log::Record) {
+        if !self.enabled(record.metadata()) {
+            return;
+        }
+
         rotate_if_exceeds_max_file_size(&self.file, self.file_path.clone(), &self.config);
 
         let formatter = DefaultFormatter::new(record, &self.config);

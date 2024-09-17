@@ -1,3 +1,5 @@
+use log::LevelFilter;
+
 use crate::Config;
 
 pub mod default;
@@ -10,12 +12,13 @@ pub trait Formatter {
 impl Config {
     pub fn new() -> Config {
         Config {
+            level_filter: LevelFilter::Off,
             datetime_format: "%Y-%m-%d %H:%M:%S".to_string(),
             #[cfg(feature = "timezone")]
             timezone: chrono_tz::Tz::UTC,
             max_file_size: None,
-            level_filters: None,
-            target_filters: None,
+            levels: None,
+            targets: None,
         }
     }
 }

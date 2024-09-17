@@ -20,9 +20,6 @@ timezone = ["chrono-tz"]
 [dev-dependencies]
 ftail = { path = ".", features = ["timezone"] }
 
-[profile.test]
-features = ["timezone"]
-
 [workspace]
 members = [
     "examples/console",

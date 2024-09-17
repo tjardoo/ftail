@@ -182,7 +182,7 @@ use drivers::{
     single_file::SingleFileLogger,
 };
 use error::FtailError;
-use log::{Level, Log};
+use log::{Level, LevelFilter, Log};
 
 #[cfg(feature = "timezone")]
 pub use chrono_tz::Tz;
@@ -195,6 +195,8 @@ pub mod drivers;
 pub mod error;
 mod formatters;
 mod helpers;
+#[cfg(test)]
+mod tests;
 mod writer;
 
 /// The main struct for configuring the logger.
@@ -214,18 +216,18 @@ pub(crate) struct LogDriver {
 
 pub(crate) struct InitializedLogDriver {
     driver: Box<dyn Log + Send + Sync>,
-    level: log::LevelFilter,
 }
 
 /// The configuration struct for the logger. Required for custom drivers.
 #[derive(Clone)]
 pub struct Config {
+    pub level_filter: LevelFilter,
     pub datetime_format: String,
     #[cfg(feature = "timezone")]
     pub timezone: chrono_tz::Tz,
     pub max_file_size: Option<u64>,
-    pub level_filters: Option<Vec<Level>>,
-    pub target_filters: Option<Vec<String>>,
+    pub levels: Option<Vec<Level>>,
+    pub targets: Option<Vec<String>>,
 }
 
 impl Ftail {
@@ -261,15 +263,15 @@ impl Ftail {
     }
 
     /// Only log messages with the specified levels. The default is to log all levels.
-    pub fn filter_levels(mut self, level_filters: Vec<Level>) -> Self {
-        self.config.level_filters = Some(level_filters);
+    pub fn filter_levels(mut self, levels: Vec<Level>) -> Self {
+        self.config.levels = Some(levels);
 
         self
     }
 
     /// Only log messages with the specified targets. The default is to log all targets.
-    pub fn filter_targets(mut self, target_filters: Vec<&str>) -> Self {
-        self.config.target_filters = Some(target_filters.iter().map(|s| s.to_string()).collect());
+    pub fn filter_targets(mut self, targets: Vec<String>) -> Self {
+        self.config.targets = Some(targets);
 
         self
     }
@@ -340,7 +342,12 @@ impl Ftail {
 
         self.initialized_drivers = drivers
             .into_iter()
-            .map(|driver| driver.init(self.config.clone()))
+            .map(|driver| {
+                let mut config = self.config.clone();
+                config.level_filter = driver.level;
+
+                driver.init(config)
+            })
             .collect();
 
         log::set_max_level(log::LevelFilter::Trace);
@@ -362,48 +369,44 @@ impl LogDriver {
     fn init(self, config: Config) -> InitializedLogDriver {
         InitializedLogDriver {
             driver: (self.constructor)(config),
-            level: self.level,
         }
     }
 }
 
 impl Log for Ftail {
     fn enabled(&self, metadata: &log::Metadata) -> bool {
-        self.initialized_drivers
-            .iter()
-            .any(|driver| metadata.level() <= driver.level && driver.driver.enabled(metadata))
+        if self.config.levels.is_some()
+            && !self
+                .config
+                .levels
+                .as_ref()
+                .unwrap()
+                .contains(&metadata.level())
+        {
+            return false;
+        }
+
+        if self.config.targets.is_some()
+            && !self
+                .config
+                .targets
+                .as_ref()
+                .unwrap()
+                .contains(&metadata.target().to_string())
+        {
+            return false;
+        }
+
+        true
     }
 
     fn log(&self, record: &log::Record) {
+        if !self.enabled(record.metadata()) {
+            return;
+        }
+
         for driver in &self.initialized_drivers {
-            // Skip the record if the level is not in the level filters
-            if self.config.level_filters.is_some()
-                && !self
-                    .config
-                    .level_filters
-                    .as_ref()
-                    .unwrap()
-                    .contains(&record.level())
-            {
-                continue;
-            }
-
-            // Skip the record if the target is not in the target filters
-            if self.config.target_filters.is_some()
-                && !self
-                    .config
-                    .target_filters
-                    .as_ref()
-                    .unwrap()
-                    .contains(&record.target().to_string())
-            {
-                continue;
-            }
-
-            // Skip the record if the level is lower than the driver level
-            if driver.level >= record.level() || driver.level == log::LevelFilter::Off {
-                driver.driver.log(record);
-            }
+            driver.driver.log(record);
         }
     }
 
