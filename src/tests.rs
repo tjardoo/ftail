@@ -87,11 +87,10 @@ mod tests {
 
         let logs = buffer.lock().unwrap();
 
-        return logs
-            .iter()
+        logs.iter()
             .map(|log| log.to_string())
             .collect::<Vec<String>>()
-            .join("\n");
+            .join("\n")
     }
 
     #[test]
