@@ -1,9 +1,9 @@
 [package]
 name = "ftail"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
-description = "Ftail is simple logging implementation for the `log` crate with support for multiple drivers."
+description = "Ftail is simple logging implementation for the `log` crate with support for multiple channels."
 repository = "https://github.com/tjardoo/ftail"
 documentation = "https://docs.rs/ftail"
 keywords = ["log", "logging", "filelog"]

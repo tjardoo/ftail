@@ -1,12 +1,12 @@
 # Ftail
 
-Ftail is simple logging implementation for the `log` crate with support for multiple drivers.
+Ftail is simple logging implementation for the `log` crate with support for multiple channels.
 
 - [Console](#console)
 - [Formatted console](#formatted-console)
 - [Single file](#single-file)
 - [Daily file](#daily-file)
-- [Custom driver](#custom-driver)
+- [Custom channel](#custom-channel)
 
 ## Usage
 
@@ -44,13 +44,13 @@ You can set the following configuration options:
 - `.filter_levels(vec![Level::Debug, Level::Error])` only log messages with the specified levels
 - `.filter_targets(vec!["foo", "bar"])` only log messages with the specified targets
 
-## Drivers
+## Channels
 
 ### Console
 
 Logs to the standard output without any formatting.
 
-The `stdout` driver takes the following parameters:
+The `stdout` channel takes the following parameters:
 
 - `level`: the minumum log level to log
 
@@ -72,7 +72,7 @@ Ftail::new()
 
 Logs to the standard output with formatted and colored output.
 
-The `console` driver takes the following parameters:
+The `console` channel takes the following parameters:
 
 - `level`: the minumum log level to log
 
@@ -108,7 +108,7 @@ examples\formatted_console\src/main.rs:17
 
 Logs to the single log file `logs/demo.log`.
 
-The `single_file` driver takes the following parameters:
+The `single_file` channel takes the following parameters:
 
 - `path`: the path to the log file
 - `append`: whether to append to the log file or overwrite it
@@ -124,7 +124,7 @@ Ftail::new()
 
 Logs to a daily log file in the `logs` directory. The log files have the following format: `YYYY-MM-DD.log`.
 
-The `daily_file` driver takes the following parameters:
+The `daily_file` channel takes the following parameters:
 
 - `dir`: the directory to store the log files
 - `level`: the minumum log level to log
@@ -135,9 +135,9 @@ Ftail::new()
     .init()?;
 ```
 
-### Custom driver
+### Custom channel
 
-Create your own log driver.
+Create your own log channel.
 
 ```rust
 Ftail::new()

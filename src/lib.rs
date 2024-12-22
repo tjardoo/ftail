@@ -1,12 +1,12 @@
 //! # Ftail
 //!
-//! Ftail is simple logging implementation for the `log` crate with support for multiple drivers.
+//! Ftail is simple logging implementation for the `log` crate with support for multiple channels.
 //!
 //! - [Console](#console)
 //! - [Formatted console](#formatted-console)
 //! - [Single file](#single-file)
 //! - [Daily file](#daily-file)
-//! - [Custom driver](#custom-driver)
+//! - [Custom channel](#custom-channel)
 //!
 //! ## Usage
 //!
@@ -44,13 +44,13 @@
 //! - `.filter_levels(vec![Level::Debug, Level::Error])` only log messages with the specified levels
 //! - `.filter_targets(vec!["foo", "bar"])` only log messages with the specified targets
 //!
-//! ## Drivers
+//! ## Channels
 //!
 //! ### Console
 //!
 //! Logs to the standard output without any formatting.
 //!
-//! The `stdout` driver takes the following parameters:
+//! The `stdout` channel takes the following parameters:
 //!
 //! - `level`: the minumum log level to log
 //!
@@ -72,7 +72,7 @@
 //!
 //! Logs to the standard output with formatted and colored output.
 //!
-//! The `console` driver takes the following parameters:
+//! The `console` channel takes the following parameters:
 //!
 //! - `level`: the minumum log level to log
 //!
@@ -108,7 +108,7 @@
 //!
 //! Logs to the single log file `logs/demo.log`.
 //!
-//! The `single_file` driver takes the following parameters:
+//! The `single_file` channel takes the following parameters:
 //!
 //! - `path`: the path to the log file
 //! - `append`: whether to append to the log file or overwrite it
@@ -124,7 +124,7 @@
 //!
 //! Logs to a daily log file in the `logs` directory. The log files have the following format: `YYYY-MM-DD.log`.
 //!
-//! The `daily_file` driver takes the following parameters:
+//! The `daily_file` channel takes the following parameters:
 //!
 //! - `dir`: the directory to store the log files
 //! - `level`: the minumum log level to log
@@ -135,9 +135,9 @@
 //!     .init()?;
 //! ```
 //!
-//! ### Custom driver
+//! ### Custom channel
 //!
-//! Create your own log driver.
+//! Create your own log channel.
 //!
 //! ```rust
 //! Ftail::new()
@@ -185,7 +185,7 @@
 //! 19:37:22.403 [ERROR] This is an error message
 //! ```
 
-use drivers::{
+use channels::{
     console::ConsoleLogger, daily_file::DailyFileLogger, formatted_console::FormattedConsoleLogger,
     single_file::SingleFileLogger,
 };
@@ -197,8 +197,8 @@ pub use chrono_tz::Tz;
 
 /// Module containing the ANSI escape codes.
 pub mod ansi_escape;
-/// Module containing the drivers.
-pub mod drivers;
+/// Module containing the channels.
+pub mod channels;
 /// Module containing the error type.
 pub mod error;
 mod formatters;
@@ -209,24 +209,24 @@ mod writer;
 
 /// The main struct for configuring the logger.
 pub struct Ftail {
-    drivers: Vec<LogDriver>,
-    initialized_drivers: Vec<InitializedLogDriver>,
+    channels: Vec<LogChannel>,
+    initialized_channels: Vec<InitializedLogChannel>,
     config: Config,
 }
 
 unsafe impl Send for Ftail {}
 unsafe impl Sync for Ftail {}
 
-pub(crate) struct LogDriver {
+pub(crate) struct LogChannel {
     constructor: Box<dyn Fn(Config) -> Box<dyn Log + Send + Sync>>,
     level: log::LevelFilter,
 }
 
-pub(crate) struct InitializedLogDriver {
-    driver: Box<dyn Log + Send + Sync>,
+pub(crate) struct InitializedLogChannel {
+    channel: Box<dyn Log + Send + Sync>,
 }
 
-/// The configuration struct for the logger. Required for custom drivers.
+/// The configuration struct for the logger. Required for custom channels.
 #[derive(Clone)]
 pub struct Config {
     pub level_filter: LevelFilter,
@@ -242,8 +242,8 @@ impl Ftail {
     /// Create a new instance of `Ftail`.
     pub fn new() -> Self {
         Self {
-            drivers: Vec::new(),
-            initialized_drivers: Vec::new(),
+            channels: Vec::new(),
+            initialized_channels: Vec::new(),
             config: Config::new(),
         }
     }
@@ -284,32 +284,32 @@ impl Ftail {
         self
     }
 
-    fn add_driver<F>(mut self, constructor: F, level: log::LevelFilter) -> Self
+    fn add_channel<F>(mut self, constructor: F, level: log::LevelFilter) -> Self
     where
         F: Fn(Config) -> Box<dyn Log + Send + Sync> + 'static,
     {
-        self.drivers.push(LogDriver::new(constructor, level));
+        self.channels.push(LogChannel::new(constructor, level));
         self
     }
 
-    /// Add a driver that logs messages to the console.
+    /// Add a channel that logs messages to the console.
     pub fn console(self, level: log::LevelFilter) -> Self {
         let constructor =
             |config: Config| Box::new(ConsoleLogger::new(config)) as Box<dyn Log + Send + Sync>;
 
-        self.add_driver(constructor, level)
+        self.add_channel(constructor, level)
     }
 
-    /// Add a driver that logs formatted messages to the console.
+    /// Add a channel that logs formatted messages to the console.
     pub fn formatted_console(self, level: log::LevelFilter) -> Self {
         let constructor = |config: Config| {
             Box::new(FormattedConsoleLogger::new(config)) as Box<dyn Log + Send + Sync>
         };
 
-        self.add_driver(constructor, level)
+        self.add_channel(constructor, level)
     }
 
-    /// Add a driver that logs messages to a single file.
+    /// Add a channel that logs messages to a single file.
     pub fn single_file(self, path: &str, append: bool, level: log::LevelFilter) -> Self {
         let path = path.to_string();
 
@@ -318,10 +318,10 @@ impl Ftail {
                 as Box<dyn Log + Send + Sync>
         };
 
-        self.add_driver(constructor, level)
+        self.add_channel(constructor, level)
     }
 
-    /// Add a driver that logs messages to a daily log file.
+    /// Add a channel that logs messages to a daily log file.
     pub fn daily_file(self, path: &str, level: log::LevelFilter) -> Self {
         let path = path.to_string();
 
@@ -329,32 +329,32 @@ impl Ftail {
             Box::new(DailyFileLogger::new(&path, config).unwrap()) as Box<dyn Log + Send + Sync>
         };
 
-        self.add_driver(constructor, level)
+        self.add_channel(constructor, level)
     }
 
-    /// Add a custom driver.
+    /// Add a custom channel.
     pub fn custom<F>(self, constructor: F, level: log::LevelFilter) -> Self
     where
         F: Fn(Config) -> Box<dyn Log + Send + Sync> + 'static,
     {
-        self.add_driver(constructor, level)
+        self.add_channel(constructor, level)
     }
 
     /// Initialize the logger.
     pub fn init(mut self) -> Result<(), FtailError> {
-        if self.drivers.is_empty() {
-            return Err(FtailError::NoDriversError);
+        if self.channels.is_empty() {
+            return Err(FtailError::NoChannelsError);
         }
 
-        let drivers = std::mem::take(&mut self.drivers);
+        let channels = std::mem::take(&mut self.channels);
 
-        self.initialized_drivers = drivers
+        self.initialized_channels = channels
             .into_iter()
-            .map(|driver| {
+            .map(|channel| {
                 let mut config = self.config.clone();
-                config.level_filter = driver.level;
+                config.level_filter = channel.level;
 
-                driver.init(config)
+                channel.init(config)
             })
             .collect();
 
@@ -363,7 +363,7 @@ impl Ftail {
     }
 }
 
-impl LogDriver {
+impl LogChannel {
     fn new<F>(constructor: F, level: log::LevelFilter) -> Self
     where
         F: Fn(Config) -> Box<dyn Log + Send + Sync> + 'static,
@@ -374,9 +374,9 @@ impl LogDriver {
         }
     }
 
-    fn init(self, config: Config) -> InitializedLogDriver {
-        InitializedLogDriver {
-            driver: (self.constructor)(config),
+    fn init(self, config: Config) -> InitializedLogChannel {
+        InitializedLogChannel {
+            channel: (self.constructor)(config),
         }
     }
 }
@@ -413,14 +413,14 @@ impl Log for Ftail {
             return;
         }
 
-        for driver in &self.initialized_drivers {
-            driver.driver.log(record);
+        for channel in &self.initialized_channels {
+            channel.channel.log(record);
         }
     }
 
     fn flush(&self) {
-        for driver in &self.initialized_drivers {
-            driver.driver.flush();
+        for channel in &self.initialized_channels {
+            channel.channel.flush();
         }
     }
 }
