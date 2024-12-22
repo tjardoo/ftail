@@ -13,7 +13,7 @@ impl DefaultFormatter<'_> {
     }
 }
 
-impl<'a> Formatter for DefaultFormatter<'a> {
+impl Formatter for DefaultFormatter<'_> {
     fn format(&self) -> String {
         let writer = LogWriter::new(self.record, self.config);
 
