@@ -234,6 +234,7 @@ pub struct Config {
     #[cfg(feature = "timezone")]
     pub timezone: chrono_tz::Tz,
     pub max_file_size: Option<u64>,
+    pub retention_days: Option<u64>,
     pub levels: Option<Vec<Level>>,
     pub targets: Option<Vec<String>>,
 }
@@ -266,6 +267,13 @@ impl Ftail {
     /// Set the maximum file size for the logger.
     pub fn max_file_size(mut self, max_file_size_in_mb: u64) -> Self {
         self.config.max_file_size = Some(max_file_size_in_mb * 1024 * 1024);
+
+        self
+    }
+
+    /// Set the retention days for the logger (daily file logger only).
+    pub fn retention_days(mut self, retention_days: u64) -> Self {
+        self.config.retention_days = Some(retention_days);
 
         self
     }

@@ -4,7 +4,10 @@ use log::LevelFilter;
 // This example demonstrates how to log messages to a daily log file in the logs directory.
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    Ftail::new().daily_file("logs", LevelFilter::Trace).init()?;
+    Ftail::new()
+        .retention_days(14)
+        .daily_file("logs", LevelFilter::Trace)
+        .init()?;
 
     log::trace!("This is a trace message");
 

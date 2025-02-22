@@ -17,6 +17,7 @@ impl Config {
             #[cfg(feature = "timezone")]
             timezone: chrono_tz::Tz::UTC,
             max_file_size: None,
+            retention_days: None,
             levels: None,
             targets: None,
         }

@@ -66,6 +66,10 @@ impl DailyFileLogger {
             *file = LineWriter::new(new_file);
             *current_date = today;
         }
+
+        if let Some(retention_days) = self.config.retention_days {
+            remove_old_log_files(&self.dir, retention_days);
+        }
     }
 }
 
@@ -95,5 +99,26 @@ impl Log for DailyFileLogger {
 
     fn flush(&self) {
         self.file.lock().unwrap().flush().unwrap();
+    }
+}
+
+fn remove_old_log_files(dir: &str, retention_days: u64) {
+    let files = std::fs::read_dir(dir).unwrap();
+
+    for file in files {
+        let file = file.unwrap();
+        let path = file.path();
+
+        if path.extension().and_then(|ext| ext.to_str()) == Some("log") {
+            let metadata = file.metadata().unwrap();
+            let modified_system_time = metadata.modified().unwrap();
+            let modified = chrono::DateTime::<chrono::Local>::from(modified_system_time);
+            let now = chrono::Local::now();
+            let duration = now.signed_duration_since(modified);
+
+            if duration.num_days() > retention_days as i64 {
+                std::fs::remove_file(path).unwrap();
+            }
+        }
     }
 }
