@@ -41,6 +41,7 @@ You can set the following configuration options:
 - `.datetime_format("%Y-%m-%d %H:%M:%S.3f")` to set the datetime format
 - `.timezone(ftail::Tz::UTC)` to set the timezone [requires feature `timezone`]
 - `.max_file_size(100)` to set the maximum file size in MB (will move older logs to .old{N})
+- `.retention_days(7)` to set the number of days to keep the log files (daily file only)
 - `.filter_levels(vec![Level::Debug, Level::Error])` only log messages with the specified levels
 - `.filter_targets(vec!["foo", "bar"])` only log messages with the specified targets
 
