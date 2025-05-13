@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use ftail::Ftail;
 use log::LevelFilter;
 
@@ -6,8 +8,8 @@ use log::LevelFilter;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ftail::new()
         .console(LevelFilter::Info)
-        .single_file("logs/trace.log", true, LevelFilter::Trace)
-        .single_file("logs/error.log", true, LevelFilter::Error)
+        .single_file(Path::new("logs/trace.log"), true, LevelFilter::Trace)
+        .single_file(Path::new("logs/error.log"), true, LevelFilter::Error)
         .init()?;
 
     log::trace!("This is a trace message");

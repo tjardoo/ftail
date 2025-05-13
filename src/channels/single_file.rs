@@ -2,7 +2,7 @@ use log::{LevelFilter, Log};
 use std::{
     fs::File,
     io::{LineWriter, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::Mutex,
 };
 
@@ -21,7 +21,7 @@ pub struct SingleFileLogger {
 }
 
 impl SingleFileLogger {
-    pub fn new(path: &str, append: bool, config: Config) -> Result<Self, FtailError> {
+    pub fn new(path: &Path, append: bool, config: Config) -> Result<Self, FtailError> {
         let file = std::fs::OpenOptions::new()
             .create(true)
             .write(true)
@@ -32,7 +32,7 @@ impl SingleFileLogger {
         let md = std::fs::metadata(path).map_err(FtailError::IoError)?;
 
         if md.permissions().readonly() {
-            return Err(FtailError::PermissionsError(path.to_string()));
+            return Err(FtailError::PermissionsError(path.to_owned()));
         }
 
         Ok(SingleFileLogger {

@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, path::PathBuf};
 
 use log::SetLoggerError;
 
@@ -7,7 +7,7 @@ pub enum FtailError {
     SetLoggerError(SetLoggerError),
     NoChannelsError,
     IoError(std::io::Error),
-    PermissionsError(String),
+    PermissionsError(PathBuf),
 }
 
 impl std::error::Error for FtailError {}
@@ -19,7 +19,7 @@ impl Display for FtailError {
             FtailError::NoChannelsError => write!(f, "No channels were added to the logger"),
             FtailError::IoError(e) => write!(f, "I/O error: {}", e),
             FtailError::PermissionsError(path) => {
-                write!(f, "The path {} is read-only", path)
+                write!(f, "The path {} is read-only", path.display())
             }
         }
     }

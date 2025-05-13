@@ -186,6 +186,8 @@
 //! 19:37:22.403 [ERROR] This is an error message
 //! ```
 
+use std::path::Path;
+
 use channels::{
     console::ConsoleLogger, daily_file::DailyFileLogger, formatted_console::FormattedConsoleLogger,
     single_file::SingleFileLogger,
@@ -319,8 +321,8 @@ impl Ftail {
     }
 
     /// Add a channel that logs messages to a single file.
-    pub fn single_file(self, path: &str, append: bool, level: log::LevelFilter) -> Self {
-        let path = path.to_string();
+    pub fn single_file(self, path: &Path, append: bool, level: log::LevelFilter) -> Self {
+        let path = path.to_owned();
 
         let constructor = move |config: Config| {
             Box::new(SingleFileLogger::new(&path, append, config).unwrap())
@@ -331,8 +333,8 @@ impl Ftail {
     }
 
     /// Add a channel that logs messages to a daily log file.
-    pub fn daily_file(self, path: &str, level: log::LevelFilter) -> Self {
-        let path = path.to_string();
+    pub fn daily_file(self, path: &Path, level: log::LevelFilter) -> Self {
+        let path = path.to_owned();
 
         let constructor = move |config: Config| {
             Box::new(DailyFileLogger::new(&path, config).unwrap()) as Box<dyn Log + Send + Sync>

@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use ftail::Ftail;
 use log::LevelFilter;
 
@@ -5,7 +7,7 @@ use log::LevelFilter;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ftail::new()
-        .single_file("logs/demo.log", true, LevelFilter::Trace)
+        .single_file(Path::new("logs/demo.log"), true, LevelFilter::Trace)
         .max_file_size(10)
         .init()?;
 
