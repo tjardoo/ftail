@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.2.2 (2025-05-13)
+## v0.3.0 (2025-05-13)
 
 - Use `Path`/`Pathbuf` for directory and file paths
 

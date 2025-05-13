@@ -14,7 +14,7 @@ Add the following dependencies to your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-ftail = "0.2"
+ftail = "0.3"
 ```
 
 Add the following code to your `main.rs` or `lib.rs` file:
