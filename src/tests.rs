@@ -148,7 +148,7 @@ mod tests {
 
         let message = get_message_from_logger(&config, metadata, args);
 
-        assert_eq!(message, "AEDT DEBUG test Hello, world!");
+        assert_eq!(message, "AEST DEBUG test Hello, world!");
     }
 
     #[test]

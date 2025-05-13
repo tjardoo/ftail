@@ -117,7 +117,7 @@ The `single_file` channel takes the following parameters:
 
 ```rust
 Ftail::new()
-    .single_file("logs/demo.log", true, LevelFilter::Trace)
+    .single_file(Path::new("logs/demo.log"), true, LevelFilter::Trace)
     .init()?;
 ```
 
@@ -132,7 +132,7 @@ The `daily_file` channel takes the following parameters:
 
 ```rust
 Ftail::new()
-    .daily_file("logs", LevelFilter::Trace)
+    .daily_file(Path::new("logs"), LevelFilter::Trace)
     .init()?;
 ```
 
