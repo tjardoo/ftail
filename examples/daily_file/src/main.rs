@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use ftail::Ftail;
 use log::LevelFilter;
 
@@ -6,7 +8,7 @@ use log::LevelFilter;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ftail::new()
         .retention_days(14)
-        .daily_file("logs", LevelFilter::Trace)
+        .daily_file(Path::new("logs"), LevelFilter::Trace)
         .init()?;
 
     log::trace!("This is a trace message");

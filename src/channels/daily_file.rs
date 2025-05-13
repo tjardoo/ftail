@@ -2,7 +2,7 @@ use log::{LevelFilter, Log};
 use std::{
     fs::File,
     io::{LineWriter, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::Mutex,
 };
 
@@ -17,15 +17,15 @@ use crate::{
 pub struct DailyFileLogger {
     file: Mutex<LineWriter<File>>,
     file_path: PathBuf,
-    dir: String,
+    dir: PathBuf,
     current_date: Mutex<String>,
     config: Config,
 }
 
 impl DailyFileLogger {
-    pub fn new(dir: &str, config: Config) -> Result<Self, FtailError> {
-        let today = chrono::Local::now().format("%Y-%m-%d").to_string();
-        let path = format!("{}/{}.log", dir, today);
+    pub fn new(dir: &Path, config: Config) -> Result<Self, FtailError> {
+        let today_filename = chrono::Local::now().format("%Y-%m-%d.log").to_string();
+        let path = dir.join(&today_filename);
 
         let file = std::fs::OpenOptions::new()
             .create(true)
@@ -36,14 +36,14 @@ impl DailyFileLogger {
         let md = std::fs::metadata(dir).map_err(FtailError::IoError)?;
 
         if md.permissions().readonly() {
-            return Err(FtailError::PermissionsError(dir.to_string()));
+            return Err(FtailError::PermissionsError(dir.to_owned()));
         }
 
         Ok(DailyFileLogger {
             file: Mutex::new(LineWriter::new(file)),
-            file_path: PathBuf::from(path),
-            dir: dir.to_string(),
-            current_date: Mutex::new(today),
+            file_path: path,
+            dir: dir.to_owned(),
+            current_date: Mutex::new(today_filename),
             config,
         })
     }
@@ -53,7 +53,7 @@ impl DailyFileLogger {
         let mut current_date = self.current_date.lock().unwrap();
 
         if *current_date != today {
-            let path = format!("{}/{}.log", self.dir, today);
+            let path = self.dir.join(format!("{today}.log"));
 
             let new_file = std::fs::OpenOptions::new()
                 .create(true)
@@ -102,7 +102,7 @@ impl Log for DailyFileLogger {
     }
 }
 
-fn remove_old_log_files(dir: &str, retention_days: u64) {
+fn remove_old_log_files(dir: &Path, retention_days: u64) {
     let files = std::fs::read_dir(dir).unwrap();
 
     for file in files {
