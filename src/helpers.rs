@@ -1,7 +1,9 @@
+#[cfg(feature = "file_channels")]
+use crate::Config;
+#[cfg(feature = "file_channels")]
 use std::{fs::File, io::LineWriter, path::PathBuf, sync::Mutex};
 
-use crate::Config;
-
+#[cfg(feature = "file_channels")]
 pub(crate) fn rotate_if_exceeds_max_file_size(
     file: &Mutex<LineWriter<File>>,
     file_path: PathBuf,

@@ -6,4 +6,6 @@ publish = false
 
 [dependencies]
 log = "0.4"
-ftail = { path = "../../../ftail" }
+ftail = { path = "../../../ftail", default-features = false, features = [
+    "formatted_console",
+] }
