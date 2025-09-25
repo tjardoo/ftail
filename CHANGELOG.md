@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.3.1 (2025-09-25)
+
+- Moved all channels behind a feature flag
+- Support environment variable `RUST_LOG` for each channel
+
 ## v0.3.0 (2025-05-13)
 
 - Use `Path`/`Pathbuf` for directory and file paths
