@@ -1,59 +1,66 @@
 //! # Ftail
 //!
-//! Ftail is simple logging implementation for the `log` crate with support for multiple channels.
+//! **Ftail** is a simple logging implementation for the [`log`](https://crates.io/crates/log) crate with support for multiple channels, including console output, files, and custom loggers.
 //!
-//! - [Console](#console)
-//! - [Formatted console](#formatted-console)
-//! - [Single file](#single-file)
-//! - [Daily file](#daily-file)
-//! - [Custom channel](#custom-channel)
+//! ---
 //!
-//! ## Usage
+//! ## Features
 //!
-//! Add the following dependencies to your `Cargo.toml` file:
+//! * Multiple logging channels: console, formatted console, single file, daily file, and custom
+//! * Level and target filtering
+//! * Optional timestamp formatting and timezone support
+//! * Automatic log rotation and retention
+//! * Use `RUST_LOG` environment variable for dynamic log level control (use '_env_level' postfix)
+//!
+//! ---
+//!
+//! ## Quick Start
+//!
+//! Add Ftail to your `Cargo.toml`:
 //!
 //! ```toml
 //! [dependencies]
-//! ftail = "0.2"
+//! ftail = "0.3"
 //! ```
 //!
-//! Add the following code to your `main.rs` or `lib.rs` file:
+//! Initialize Ftail in your `main.rs` or `lib.rs`:
 //!
 //! ```rust
 //! use ftail::Ftail;
 //! use log::LevelFilter;
 //!
-//! Ftail::new()
-//!     .console(LevelFilter::Debug)
-//!     .daily_file("logs", LevelFilter::Error)
-//!     .init()?;
+//! fn main() -> Result<(), Box<dyn std::error::Error>> {
+//!     Ftail::new()
+//!         .console(LevelFilter::Info)        // log to console
+//!         .daily_file("logs", LevelFilter::Error) // log errors to daily files
+//!         .init()?; // initialize logger
 //!
-//! // log messages anywhere in your code
-//! log::trace!("This is a trace message");
-//! log::debug!("This is a debug message");
-//! log::info!(target: "foo", "bar");
-//! log::warn!("This is a warning message");
-//! log::error!("This is an error message");
+//!     log::info!("Hello, Ftail!");
+//!     log::error!("This is an error message");
+//!     Ok(())
+//! }
 //! ```
 //!
-//! You can set the following configuration options:
+//! ---
 //!
-//! - `.datetime_format("%Y-%m-%d %H:%M:%S.3f")` to set the datetime format
-//! - `.timezone(ftail::Tz::UTC)` to set the timezone [requires feature `timezone`]
-//! - `.max_file_size(100)` to set the maximum file size in MB (will move older logs to .old{N})
-//! - `.retention_days(7)` to set the number of days to keep the log files (daily file only)
-//! - `.filter_levels(vec![Level::Debug, Level::Error])` only log messages with the specified levels
-//! - `.filter_targets(vec!["foo", "bar"])` only log messages with the specified targets
+//! ## Configuration Options
+//!
+//! | Option               | Description                      | Notes                         |
+//! | -------------------- | -------------------------------- | ----------------------------- |
+//! | `.datetime_format()` | Set the datetime format          | Ex: `"%Y-%m-%d %H:%M:%S%.3f"` |
+//! | `.timezone()`        | Set the timezone                 | Requires `timezone` feature   |
+//! | `.max_file_size()`   | Maximum file size in MB          | Older logs renamed `.old{N}`  |
+//! | `.retention_days()`  | Number of days to keep log files | Daily file only               |
+//! | `.filter_levels()`   | Log only the specified levels    | `Vec<Level>`                  |
+//! | `.filter_targets()`  | Log only the specified targets   | `Vec<&str>`                   |
+//!
+//! ---
 //!
 //! ## Channels
 //!
 //! ### Console
 //!
-//! Logs to the standard output without any formatting.
-//!
-//! The `stdout` channel takes the following parameters:
-//!
-//! - `level`: the minumum log level to log
+//! Logs to the standard output without formatting.
 //!
 //! ```rust
 //! Ftail::new()
@@ -61,21 +68,21 @@
 //!     .init()?;
 //! ```
 //!
-//! ```sh
-//! 13-09-2024 17:35:18 TRACE console This is a trace message
-//! 13-09-2024 17:35:18 DEBUG console This is a debug message
-//! 13-09-2024 17:35:18 INFO foo bar
-//! 13-09-2024 17:35:18 WARN console This is a warning message
-//! 13-09-2024 17:35:18 ERROR console This is an error message
+//! **Output:**
+//!
+//! ```text
+//! 2024-09-13 17:35:18 TRACE console This is a trace message
+//! 2024-09-13 17:35:18 DEBUG console This is a debug message
+//! 2024-09-13 17:35:18 INFO foo bar
+//! 2024-09-13 17:35:18 WARN console This is a warning message
+//! 2024-09-13 17:35:18 ERROR console This is an error message
 //! ```
+//!
+//! ---
 //!
 //! ### Formatted Console
 //!
-//! Logs to the standard output with formatted and colored output.
-//!
-//! The `console` channel takes the following parameters:
-//!
-//! - `level`: the minumum log level to log
+//! Logs with formatted and colored output.
 //!
 //! ```rust
 //! Ftail::new()
@@ -83,83 +90,67 @@
 //!     .init()?;
 //! ```
 //!
-//! ```sh
+//! **Output:**
+//!
+//! ```text
 //! 2024-09-13 17:35:37 · TRACE
 //! This is a trace message
-//! examples\formatted_console\src/main.rs:9
+//! examples/formatted_console/src/main.rs:9
 //!
 //! 2024-09-13 17:35:37 · DEBUG
 //! This is a debug message
-//! examples\formatted_console\src/main.rs:11
-//!
-//! 2024-09-13 17:35:37 · INFO
-//! bar
-//! examples\formatted_console\src/main.rs:13
-//!
-//! 2024-09-13 17:35:37 · WARN
-//! This is a warning message
-//! examples\formatted_console\src/main.rs:15
-//!
-//! 2024-09-13 17:35:37 · ERROR
-//! This is an error message
-//! examples\formatted_console\src/main.rs:17
+//! examples/formatted_console/src/main.rs:11
 //! ```
 //!
-//! ### Single file
+//! ---
 //!
-//! Logs to the single log file `logs/demo.log`.
+//! ### Single File
 //!
-//! The `single_file` channel takes the following parameters:
-//!
-//! - `path`: the path to the log file
-//! - `append`: whether to append to the log file or overwrite it
-//! - `level`: the minumum log level to log
+//! Logs to a single file (e.g., `logs/demo.log`).
 //!
 //! ```rust
 //! Ftail::new()
-//!     .single_file("logs/demo.log", true, LevelFilter::Trace)
+//!     .single_file(Path::new("logs/demo.log"), true, LevelFilter::Trace)
 //!     .init()?;
 //! ```
 //!
-//! ### Daily file
+//! * `append = true` keeps existing logs, `false` overwrites.
 //!
-//! Logs to a daily log file in the `logs` directory. The log files have the following format: `YYYY-MM-DD.log`.
+//! ---
 //!
-//! The `daily_file` channel takes the following parameters:
+//! ### Daily File
 //!
-//! - `dir`: the directory to store the log files
-//! - `level`: the minumum log level to log
+//! Logs to daily files in a directory (e.g., `logs/2025-09-25.log`).
 //!
 //! ```rust
 //! Ftail::new()
-//!     .daily_file("logs", LevelFilter::Trace)
+//!     .daily_file(Path::new("logs"), LevelFilter::Trace)
 //!     .init()?;
 //! ```
 //!
-//! ### Custom channel
+//! * Automatically rotates files per day.
 //!
-//! Create your own log channel.
+//! ---
+//!
+//! ### Custom Channel
+//!
+//! Create your own logger by implementing the `log::Log` trait:
 //!
 //! ```rust
 //! Ftail::new()
 //!     .custom(
-//!         |config: ftail::Config| Box::new(CustomLogger { config }) as Box<dyn Log + Send + Sync>,
+//!         |config| Box::new(CustomLogger { config }) as Box<dyn Log + Send + Sync>,
 //!         LevelFilter::Debug,
 //!     )
 //!     .datetime_format("%H:%M:%S%.3f")
 //!     .init()?;
 //!
-//! // the custom logger implementation
 //! struct CustomLogger {
-//!     config: Config,
+//!     config: ftail::Config,
 //! }
 //!
-//! impl Log for CustomLogger {
+//! impl log::Log for CustomLogger {
 //!     fn enabled(&self, metadata: &log::Metadata) -> bool {
-//!         if self.config.level_filter == LevelFilter::Off {
-//!             return true;
-//!         }
-//!
 //!         metadata.level() <= self.config.level_filter
 //!     }
 //!
@@ -167,24 +158,33 @@
 //!         if !self.enabled(record.metadata()) {
 //!             return;
 //!         }
-//!
 //!         let time = chrono::Local::now()
 //!             .format(&self.config.datetime_format)
 //!             .to_string();
-//!
-//!         println!("{} [{}] {}", time.black(), record.level().bold(), record.args());
+//!         println!("[{}] {}: {}", time, record.level(), record.args());
 //!     }
 //!
 //!     fn flush(&self) {}
 //! }
 //! ```
 //!
-//! ```sh
+//! **Output:**
+//!
+//! ```text
 //! 19:37:22.402 [DEBUG] This is a debug message
 //! 19:37:22.403 [INFO] bar
 //! 19:37:22.403 [WARN] This is a warning message
 //! 19:37:22.403 [ERROR] This is an error message
 //! ```
+//!
+//! ---
+//!
+//! ## Tips
+//!
+//! * Use `.console(LevelFilter::Debug)` for development.
+//! * Use `.daily_file()` in production to organize logs by date.
+//! * Combine `.max_file_size()` and `.retention_days()` to prevent disk bloat.
+//! * Only enable the channels you need to reduce overhead by disabling default features in `Cargo.toml`.
 
 #[cfg(any(
     feature = "console",
