@@ -6,4 +6,7 @@ publish = false
 
 [dependencies]
 log = "0.4"
-ftail = { path = "../../../ftail", features = ["timezone"] }
+ftail = { path = "../../../ftail", default-features = false, features = [
+    "console",
+    "timezone",
+] }

@@ -1,7 +1,9 @@
+#[cfg(feature = "file_channels")]
+use crate::Config;
+#[cfg(feature = "file_channels")]
 use std::{fs::File, io::LineWriter, path::PathBuf, sync::Mutex};
 
-use crate::Config;
-
+#[cfg(feature = "file_channels")]
 pub(crate) fn rotate_if_exceeds_max_file_size(
     file: &Mutex<LineWriter<File>>,
     file_path: PathBuf,
@@ -33,6 +35,11 @@ pub(crate) fn rotate_if_exceeds_max_file_size(
     }
 }
 
+#[cfg(any(
+    feature = "console",
+    feature = "formatted_console",
+    feature = "file_channels"
+))]
 pub(crate) fn get_env_log_level() -> log::LevelFilter {
     let level = std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string());
 

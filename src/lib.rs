@@ -186,19 +186,26 @@
 //! 19:37:22.403 [ERROR] This is an error message
 //! ```
 
-use std::path::Path;
-
-use channels::{
-    console::ConsoleLogger, daily_file::DailyFileLogger, formatted_console::FormattedConsoleLogger,
-    single_file::SingleFileLogger,
-};
-use error::FtailError;
-use log::{Level, LevelFilter, Log};
-
+#[cfg(any(
+    feature = "console",
+    feature = "formatted_console",
+    feature = "file_channels"
+))]
+use crate::helpers::get_env_log_level;
+#[cfg(feature = "console")]
+use channels::console::ConsoleLogger;
+#[cfg(feature = "daily_file")]
+use channels::daily_file::DailyFileLogger;
+#[cfg(feature = "formatted_console")]
+use channels::formatted_console::FormattedConsoleLogger;
+#[cfg(feature = "single_file")]
+use channels::single_file::SingleFileLogger;
 #[cfg(feature = "timezone")]
 pub use chrono_tz::Tz;
-
-use crate::helpers::get_env_log_level;
+use error::FtailError;
+use log::{Level, LevelFilter, Log};
+#[cfg(feature = "file_channels")]
+use std::path::Path;
 
 /// Module containing the ANSI escape codes.
 pub mod ansi_escape;
@@ -306,6 +313,7 @@ impl Ftail {
     }
 
     /// Add a channel that logs messages to the console.
+    #[cfg(feature = "console")]
     pub fn console(self, level: log::LevelFilter) -> Self {
         let constructor =
             |config: Config| Box::new(ConsoleLogger::new(config)) as Box<dyn Log + Send + Sync>;
@@ -314,11 +322,13 @@ impl Ftail {
     }
 
     // Add a channel that logs messages to the console with the log level set from the environment variable `RUST_LOG`.
+    #[cfg(feature = "console")]
     pub fn console_env_level(self) -> Self {
         self.console(get_env_log_level())
     }
 
     /// Add a channel that logs formatted messages to the console.
+    #[cfg(feature = "formatted_console")]
     pub fn formatted_console(self, level: log::LevelFilter) -> Self {
         let constructor = |config: Config| {
             Box::new(FormattedConsoleLogger::new(config)) as Box<dyn Log + Send + Sync>
@@ -328,11 +338,13 @@ impl Ftail {
     }
 
     /// Add a channel that logs formatted messages to the console with the log level set from the environment variable `RUST_LOG`.
+    #[cfg(feature = "formatted_console")]
     pub fn formatted_console_env_level(self) -> Self {
         self.formatted_console(get_env_log_level())
     }
 
     /// Add a channel that logs messages to a single file.
+    #[cfg(feature = "single_file")]
     pub fn single_file(self, path: &Path, append: bool, level: log::LevelFilter) -> Self {
         let path = path.to_owned();
 
@@ -345,11 +357,13 @@ impl Ftail {
     }
 
     /// Add a channel that logs messages to a single file with the log level set from the environment variable `RUST_LOG`.
+    #[cfg(feature = "single_file")]
     pub fn single_file_env_level(self, path: &Path, append: bool) -> Self {
         self.single_file(path, append, get_env_log_level())
     }
 
     /// Add a channel that logs messages to a daily log file.
+    #[cfg(feature = "daily_file")]
     pub fn daily_file(self, path: &Path, level: log::LevelFilter) -> Self {
         let path = path.to_owned();
 
@@ -361,6 +375,7 @@ impl Ftail {
     }
 
     /// Add a channel that logs messages to a daily log file with the log level set from the environment variable `RUST_LOG`.
+    #[cfg(feature = "daily_file")]
     pub fn daily_file_env_level(self, path: &Path) -> Self {
         self.daily_file(path, get_env_log_level())
     }

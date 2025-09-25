@@ -2,7 +2,9 @@ use log::LevelFilter;
 
 use crate::Config;
 
+#[cfg(feature = "standard")]
 pub mod default;
+#[cfg(feature = "formatted")]
 pub mod readable;
 
 pub trait Formatter {

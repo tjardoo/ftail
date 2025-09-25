@@ -29,6 +29,7 @@ impl<'a> LogWriter<'a> {
         self.record.level().to_string()
     }
 
+    #[cfg(feature = "standard")]
     pub fn get_target(&self) -> String {
         self.record.target().to_string()
     }
@@ -37,10 +38,12 @@ impl<'a> LogWriter<'a> {
         self.record.args().to_string()
     }
 
+    #[cfg(feature = "formatted")]
     pub fn get_file(&self) -> Option<String> {
         self.record.file().map(|f| f.to_string())
     }
 
+    #[cfg(feature = "formatted")]
     pub fn get_line(&self) -> Option<u32> {
         self.record.line()
     }

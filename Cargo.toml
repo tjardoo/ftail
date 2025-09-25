@@ -14,8 +14,19 @@ chrono = "0.4"
 chrono-tz = { version = "0.10", optional = true }
 
 [features]
-default = []
+default = ["channels"]
 timezone = ["chrono-tz"]
+
+channels = ["console", "formatted_console", "daily_file", "single_file"]
+
+console = ["standard"]
+formatted_console = ["formatted"]
+daily_file = ["standard", "file_channels"]
+single_file = ["standard", "file_channels"]
+
+file_channels = []
+standard = []
+formatted = []
 
 [dev-dependencies]
 ftail = { path = ".", features = ["timezone"] }
