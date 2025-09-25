@@ -20,6 +20,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             true,
             LevelFilter::Error,
         )
+        .daily_file_env_level(Path::new("examples/stack/logs"))
         .init()?;
 
     log::trace!("This is a trace message");

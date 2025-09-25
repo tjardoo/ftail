@@ -35,6 +35,11 @@ pub(crate) fn rotate_if_exceeds_max_file_size(
     }
 }
 
+#[cfg(any(
+    feature = "console",
+    feature = "formatted_console",
+    feature = "file_channels"
+))]
 pub(crate) fn get_env_log_level() -> log::LevelFilter {
     let level = std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string());
 
