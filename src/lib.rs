@@ -198,6 +198,8 @@ use log::{Level, LevelFilter, Log};
 #[cfg(feature = "timezone")]
 pub use chrono_tz::Tz;
 
+use crate::helpers::get_env_log_level;
+
 /// Module containing the ANSI escape codes.
 pub mod ansi_escape;
 /// Module containing the channels.
@@ -311,6 +313,11 @@ impl Ftail {
         self.add_channel(constructor, level)
     }
 
+    // Add a channel that logs messages to the console with the log level set from the environment variable `RUST_LOG`.
+    pub fn console_env_level(self) -> Self {
+        self.console(get_env_log_level())
+    }
+
     /// Add a channel that logs formatted messages to the console.
     pub fn formatted_console(self, level: log::LevelFilter) -> Self {
         let constructor = |config: Config| {
@@ -318,6 +325,11 @@ impl Ftail {
         };
 
         self.add_channel(constructor, level)
+    }
+
+    /// Add a channel that logs formatted messages to the console with the log level set from the environment variable `RUST_LOG`.
+    pub fn formatted_console_env_level(self) -> Self {
+        self.formatted_console(get_env_log_level())
     }
 
     /// Add a channel that logs messages to a single file.
@@ -332,6 +344,11 @@ impl Ftail {
         self.add_channel(constructor, level)
     }
 
+    /// Add a channel that logs messages to a single file with the log level set from the environment variable `RUST_LOG`.
+    pub fn single_file_env_level(self, path: &Path, append: bool) -> Self {
+        self.single_file(path, append, get_env_log_level())
+    }
+
     /// Add a channel that logs messages to a daily log file.
     pub fn daily_file(self, path: &Path, level: log::LevelFilter) -> Self {
         let path = path.to_owned();
@@ -341,6 +358,11 @@ impl Ftail {
         };
 
         self.add_channel(constructor, level)
+    }
+
+    /// Add a channel that logs messages to a daily log file with the log level set from the environment variable `RUST_LOG`.
+    pub fn daily_file_env_level(self, path: &Path) -> Self {
+        self.daily_file(path, get_env_log_level())
     }
 
     /// Add a custom channel.
