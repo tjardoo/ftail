@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- **Behaviour change:** `LevelFilter::Off` (and `RUST_LOG=off`) now disables a channel. Previously it logged every level; use `LevelFilter::Trace` to log everything
+- Fix `single_file` with `append = false` not overwriting the existing file
+- Fix the daily file channel writing to the previous day's file after a `max_file_size` rotation
+- `RUST_LOG` values like `info,hyper=warn` no longer panic; the bare level is used, otherwise `info`
+- `init()` returns an error instead of panicking when a log file can't be opened
+- File channels no longer panic on I/O errors while logging
+- Formatted console: TRACE, timestamps and file locations are readable on dark terminals
+- Fix the examples in the README
+
 ## v0.3.1 (2025-09-25)
 
 - Moved all channels behind a feature flag

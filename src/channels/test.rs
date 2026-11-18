@@ -2,7 +2,7 @@ use crate::{
     formatters::{default::DefaultFormatter, Formatter},
     Config,
 };
-use log::{LevelFilter, Log};
+use log::Log;
 use std::sync::{Arc, Mutex};
 
 pub struct TestLogger {
@@ -22,10 +22,6 @@ impl TestLogger {
 
 impl Log for TestLogger {
     fn enabled(&self, metadata: &log::Metadata) -> bool {
-        if self.config.level_filter == LevelFilter::Off {
-            return true;
-        }
-
         metadata.level() <= self.config.level_filter
     }
 

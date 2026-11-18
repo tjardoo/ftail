@@ -1,4 +1,4 @@
-use log::{LevelFilter, Log};
+use log::Log;
 
 use crate::{
     formatters::{readable::ReadableFormatter, Formatter},
@@ -18,10 +18,6 @@ impl FormattedConsoleLogger {
 
 impl Log for FormattedConsoleLogger {
     fn enabled(&self, metadata: &log::Metadata) -> bool {
-        if self.config.level_filter == LevelFilter::Off {
-            return true;
-        }
-
         metadata.level() <= self.config.level_filter
     }
 
