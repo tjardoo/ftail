@@ -21,15 +21,33 @@ fn remove_datetime_from_message(message: String, config: Config) -> String {
     message[len..].to_string()
 }
 
-// The `log` crate allow only one logger to be set. When running `cargo test` multiple tests are run concurrently.
-// This causes the logger to be set multiple times which results in a panic. To avoid this, we need to run the tests invidually.
-
 #[allow(clippy::module_inception)]
 #[cfg(test)]
 mod tests {
-    use crate::{channels::test::TestLogger, tests::remove_datetime_from_message, Config, Ftail};
-    use log::{Level, Log, Metadata, Record};
+    use crate::{
+        channels::test::TestLogger, error::FtailError, tests::remove_datetime_from_message, Config,
+        Ftail,
+    };
+    use log::{Level, LevelFilter, Log, Metadata, Record};
     use std::sync::{Arc, Mutex};
+
+    fn test_logger(
+        config: Config,
+        buffer: Arc<Mutex<Vec<String>>>,
+    ) -> impl Fn(Config) -> Box<dyn Log + Send + Sync> {
+        move |_config| {
+            Box::new(TestLogger {
+                config: config.clone(),
+                buffer: Arc::clone(&buffer),
+            }) as Box<dyn Log + Send + Sync>
+        }
+    }
+
+    fn log_record(logger: &Ftail, metadata: Metadata, args: std::fmt::Arguments) {
+        let record = Record::builder().metadata(metadata).args(args).build();
+
+        logger.log(&record);
+    }
 
     fn get_message_from_logger(
         config: &Config,
@@ -38,39 +56,23 @@ mod tests {
     ) -> String {
         let buffer = Arc::new(Mutex::new(Vec::new()));
 
-        let level_filter = config.level_filter;
-        let datetime_format = config.datetime_format.clone();
-        let timezone = config.timezone;
-        let levels = config.levels.clone();
-        let targets = config.targets.clone();
-
         let mut ftail = Ftail::new()
             .custom(
-                {
-                    let config = config.clone();
-                    let buffer = Arc::clone(&buffer);
-
-                    move |_config| {
-                        Box::new(TestLogger {
-                            config: config.clone(),
-                            buffer: Arc::clone(&buffer),
-                        }) as Box<dyn Log + Send + Sync>
-                    }
-                },
-                level_filter,
+                test_logger(config.clone(), Arc::clone(&buffer)),
+                config.level_filter,
             )
-            .datetime_format(&datetime_format);
+            .datetime_format(&config.datetime_format);
 
         #[cfg(feature = "timezone")]
         {
-            ftail = ftail.timezone(timezone);
+            ftail = ftail.timezone(config.timezone);
         }
 
-        if let Some(levels) = levels {
+        if let Some(levels) = config.levels.clone() {
             ftail = ftail.filter_levels(levels);
         }
 
-        if let Some(targets) = targets {
+        if let Some(targets) = &config.targets {
             let targets = targets
                 .iter()
                 .map(|target| target.as_str())
@@ -79,11 +81,9 @@ mod tests {
             ftail = ftail.filter_targets(targets);
         }
 
-        ftail.init().unwrap();
+        let logger = ftail.build().unwrap();
 
-        let record = Record::builder().metadata(metadata).args(args).build();
-
-        log::logger().log(&record);
+        log_record(&logger, metadata, args);
 
         let logs = buffer.lock().unwrap();
 
@@ -133,9 +133,10 @@ mod tests {
     #[test]
     #[cfg(feature = "timezone")]
     fn it_can_log_message_with_custom_timezone() {
+        // No daylight saving time, so the abbreviation doesn't change.
         let config = Config {
             datetime_format: "%Z".to_string(),
-            timezone: ftail::Tz::Australia__Sydney,
+            timezone: crate::Tz::Asia__Tokyo,
             ..Default::default()
         };
 
@@ -148,7 +149,7 @@ mod tests {
 
         let message = get_message_from_logger(&config, metadata, args);
 
-        assert_eq!(message, "AEST DEBUG test Hello, world!");
+        assert_eq!(message, "JST DEBUG test Hello, world!");
     }
 
     #[test]
@@ -240,5 +241,36 @@ mod tests {
         let message = get_message_from_logger(&config, metadata, args);
 
         assert_eq!(message, "");
+    }
+
+    #[test]
+    fn it_returns_an_error_when_no_channels_are_added() {
+        let result = Ftail::new().build();
+
+        assert!(matches!(result, Err(FtailError::NoChannelsError)));
+    }
+
+    #[test]
+    #[cfg(feature = "daily_file")]
+    fn it_returns_an_error_when_the_log_directory_does_not_exist() {
+        let dir = std::env::temp_dir().join("ftail-test-directory-that-does-not-exist");
+
+        let result = Ftail::new().daily_file(&dir, LevelFilter::Info).build();
+
+        assert!(matches!(result, Err(FtailError::IoError(_))));
+    }
+
+    #[test]
+    #[cfg(feature = "single_file")]
+    fn it_returns_an_error_when_the_log_file_can_not_be_opened() {
+        let path = std::env::temp_dir()
+            .join("ftail-test-directory-that-does-not-exist")
+            .join("app.log");
+
+        let result = Ftail::new()
+            .single_file(&path, true, LevelFilter::Info)
+            .build();
+
+        assert!(matches!(result, Err(FtailError::IoError(_))));
     }
 }

@@ -1,36 +1,39 @@
 #[cfg(feature = "file_channels")]
 use crate::Config;
 #[cfg(feature = "file_channels")]
-use std::{fs::File, io::LineWriter, path::PathBuf, sync::Mutex};
+use std::{fs::File, io::LineWriter, path::Path};
 
 #[cfg(feature = "file_channels")]
 pub(crate) fn rotate_if_exceeds_max_file_size(
-    file: &Mutex<LineWriter<File>>,
-    file_path: PathBuf,
+    file: &mut LineWriter<File>,
+    file_path: &Path,
     config: &Config,
 ) {
-    if config.max_file_size.is_none() {
+    let max_file_size = match config.max_file_size {
+        Some(max_file_size) => max_file_size,
+        None => return,
+    };
+
+    match file.get_ref().metadata() {
+        Ok(md) if md.len() > max_file_size => {}
+        _ => return,
+    }
+
+    let mut new_path = file_path.as_os_str().to_owned();
+    new_path.push(".old");
+
+    let mut counter = 1;
+    while std::fs::metadata(&new_path).is_ok() {
+        new_path = file_path.as_os_str().to_owned();
+        new_path.push(format!(".old{}", counter));
+        counter += 1;
+    }
+
+    if std::fs::rename(file_path, &new_path).is_err() {
         return;
     }
 
-    let mut file = file.lock().unwrap();
-
-    let md = file.get_ref().metadata().unwrap();
-
-    if md.len() > config.max_file_size.unwrap() {
-        let path = file_path.to_str().unwrap();
-
-        let mut new_path = format!("{}.old", path);
-
-        let mut counter = 1;
-        while std::fs::metadata(&new_path).is_ok() {
-            new_path = format!("{}.old{}", path, counter);
-            counter += 1;
-        }
-
-        std::fs::rename(path, &new_path).unwrap();
-
-        let new_file = std::fs::File::create(path).unwrap();
+    if let Ok(new_file) = File::create(file_path) {
         *file = LineWriter::new(new_file);
     }
 }
@@ -41,15 +44,63 @@ pub(crate) fn rotate_if_exceeds_max_file_size(
     feature = "file_channels"
 ))]
 pub(crate) fn get_env_log_level() -> log::LevelFilter {
-    let level = std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string());
+    std::env::var("RUST_LOG")
+        .ok()
+        .and_then(|value| parse_env_log_level(&value))
+        .unwrap_or(log::LevelFilter::Info)
+}
 
-    match level.to_lowercase().as_str() {
-        "trace" => log::LevelFilter::Trace,
-        "debug" => log::LevelFilter::Debug,
-        "info" => log::LevelFilter::Info,
-        "warn" => log::LevelFilter::Warn,
-        "error" => log::LevelFilter::Error,
-        "off" => log::LevelFilter::Off,
-        _ => panic!("invalid RUST_LOG env var"),
+#[cfg(any(
+    feature = "console",
+    feature = "formatted_console",
+    feature = "file_channels"
+))]
+fn parse_env_log_level(value: &str) -> Option<log::LevelFilter> {
+    // Skip env_logger's optional `/filter` suffix.
+    let directives = value.split('/').next().unwrap_or("");
+
+    directives
+        .split(',')
+        .map(str::trim)
+        .filter(|directive| !directive.contains('='))
+        .find_map(|directive| directive.parse().ok())
+}
+
+#[cfg(all(test, feature = "console"))]
+mod tests {
+    use super::parse_env_log_level;
+    use log::LevelFilter;
+
+    #[test]
+    fn it_parses_a_plain_level() {
+        assert_eq!(parse_env_log_level("off"), Some(LevelFilter::Off));
+        assert_eq!(parse_env_log_level("error"), Some(LevelFilter::Error));
+        assert_eq!(parse_env_log_level("warn"), Some(LevelFilter::Warn));
+        assert_eq!(parse_env_log_level("info"), Some(LevelFilter::Info));
+        assert_eq!(parse_env_log_level("debug"), Some(LevelFilter::Debug));
+        assert_eq!(parse_env_log_level("trace"), Some(LevelFilter::Trace));
+        assert_eq!(parse_env_log_level("DEBUG"), Some(LevelFilter::Debug));
+        assert_eq!(parse_env_log_level(" warn "), Some(LevelFilter::Warn));
+    }
+
+    #[test]
+    fn it_uses_the_bare_level_from_env_logger_style_values() {
+        assert_eq!(
+            parse_env_log_level("info,hyper=warn"),
+            Some(LevelFilter::Info)
+        );
+        assert_eq!(
+            parse_env_log_level("hyper=warn,error"),
+            Some(LevelFilter::Error)
+        );
+        assert_eq!(parse_env_log_level("debug/foo"), Some(LevelFilter::Debug));
+    }
+
+    #[test]
+    fn it_returns_none_when_there_is_no_level() {
+        assert_eq!(parse_env_log_level(""), None);
+        assert_eq!(parse_env_log_level("my_crate=debug"), None);
+        assert_eq!(parse_env_log_level("my_crate"), None);
+        assert_eq!(parse_env_log_level("verbose"), None);
     }
 }
