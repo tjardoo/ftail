@@ -229,14 +229,11 @@ pub struct Ftail {
     config: Config,
 }
 
-unsafe impl Send for Ftail {}
-unsafe impl Sync for Ftail {}
-
 type ChannelResult = Result<InitializedLogChannel, FtailError>;
 type OnInstalled = Box<dyn FnOnce() + Send + Sync>;
 
 pub(crate) struct LogChannel {
-    constructor: Box<dyn Fn(Config) -> ChannelResult>,
+    constructor: Box<dyn Fn(Config) -> ChannelResult + Send + Sync>,
     level: log::LevelFilter,
 }
 
@@ -314,7 +311,7 @@ impl Ftail {
 
     fn add_channel<F>(mut self, constructor: F, level: log::LevelFilter) -> Self
     where
-        F: Fn(Config) -> ChannelResult + 'static,
+        F: Fn(Config) -> ChannelResult + Send + Sync + 'static,
     {
         self.channels.push(LogChannel::new(constructor, level));
         self
@@ -403,10 +400,10 @@ impl Ftail {
         self.daily_file(path, get_env_log_level())
     }
 
-    /// Add a custom channel.
+    /// Add a custom channel. The constructor must be `Send + Sync`, like the logger it builds.
     pub fn custom<F>(self, constructor: F, level: log::LevelFilter) -> Self
     where
-        F: Fn(Config) -> Box<dyn Log + Send + Sync> + 'static,
+        F: Fn(Config) -> Box<dyn Log + Send + Sync> + Send + Sync + 'static,
     {
         self.add_channel(
             move |config| Ok(InitializedLogChannel::new(constructor(config))),
@@ -461,7 +458,7 @@ impl Ftail {
 impl LogChannel {
     fn new<F>(constructor: F, level: log::LevelFilter) -> Self
     where
-        F: Fn(Config) -> ChannelResult + 'static,
+        F: Fn(Config) -> ChannelResult + Send + Sync + 'static,
     {
         Self {
             constructor: Box::new(constructor),
