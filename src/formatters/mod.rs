@@ -14,7 +14,7 @@ pub trait Formatter {
 impl Config {
     pub fn new() -> Config {
         Config {
-            level_filter: LevelFilter::Off,
+            level_filter: LevelFilter::Trace,
             datetime_format: "%Y-%m-%d %H:%M:%S".to_string(),
             #[cfg(feature = "timezone")]
             timezone: chrono_tz::Tz::UTC,

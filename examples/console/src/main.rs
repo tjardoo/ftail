@@ -9,7 +9,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // .timezone(ftail::Tz::UTC)
         .timezone(ftail::Tz::Europe__Amsterdam) // optional
         .datetime_format("%d-%m-%Y %H:%M:%S%.3f") // optional
-        .console(LevelFilter::Off)
+        .console(LevelFilter::Trace)
         .filter_levels(vec![
             Level::Trace,
             Level::Debug,

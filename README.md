@@ -20,7 +20,7 @@ Add Ftail to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-ftail = "0.3"
+ftail = "0.4"
 ```
 
 Initialize Ftail in your `main.rs` or `lib.rs`:
@@ -28,11 +28,14 @@ Initialize Ftail in your `main.rs` or `lib.rs`:
 ```rust
 use ftail::Ftail;
 use log::LevelFilter;
+use std::path::Path;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    std::fs::create_dir_all("logs")?;
+
     Ftail::new()
         .console(LevelFilter::Info)        // log to console
-        .daily_file("logs", LevelFilter::Error) // log errors to daily files
+        .daily_file(Path::new("logs"), LevelFilter::Error) // log errors to daily files
         .init()?; // initialize logger
 
     log::info!("Hello, Ftail!");
@@ -171,10 +174,10 @@ impl log::Log for CustomLogger {
 **Output:**
 
 ```text
-19:37:22.402 [DEBUG] This is a debug message
-19:37:22.403 [INFO] bar
-19:37:22.403 [WARN] This is a warning message
-19:37:22.403 [ERROR] This is an error message
+[19:37:22.402] DEBUG: This is a debug message
+[19:37:22.403] INFO: bar
+[19:37:22.403] WARN: This is a warning message
+[19:37:22.403] ERROR: This is an error message
 ```
 
 ---
