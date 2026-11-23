@@ -20,7 +20,7 @@ Add Ftail to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-ftail = "0.3"
+ftail = "0.4"
 ```
 
 Initialize Ftail in your `main.rs` or `lib.rs`:

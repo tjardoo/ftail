@@ -29,11 +29,18 @@ pub(crate) fn rotate_if_exceeds_max_file_size(
         counter += 1;
     }
 
-    if std::fs::rename(file_path, &new_path).is_err() {
-        return;
+    match std::fs::rename(file_path, &new_path) {
+        Ok(()) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(_) => return,
     }
 
-    if let Ok(new_file) = File::create(file_path) {
+    let new_file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(file_path);
+
+    if let Ok(new_file) = new_file {
         *file = LineWriter::new(new_file);
     }
 }

@@ -3,7 +3,7 @@ use std::{
     fs::File,
     io::{LineWriter, Write},
     path::{Path, PathBuf},
-    sync::{Mutex, PoisonError},
+    sync::{Arc, Mutex, PoisonError},
 };
 
 use crate::{
@@ -15,9 +15,22 @@ use crate::{
 
 /// A logger that logs messages to a single log file.
 pub struct SingleFileLogger {
-    file: Mutex<LineWriter<File>>,
+    file: Arc<Mutex<LogFile>>,
     file_path: PathBuf,
     config: Config,
+}
+
+struct LogFile {
+    writer: LineWriter<File>,
+    truncate_pending: bool,
+}
+
+impl LogFile {
+    fn truncate_if_pending(&mut self) {
+        if std::mem::take(&mut self.truncate_pending) {
+            let _ = self.writer.get_ref().set_len(0);
+        }
+    }
 }
 
 impl SingleFileLogger {
@@ -26,7 +39,7 @@ impl SingleFileLogger {
             .create(true)
             .write(true)
             .append(append)
-            .truncate(!append)
+            .truncate(false)
             .open(path)
             .map_err(FtailError::IoError)?;
 
@@ -37,10 +50,25 @@ impl SingleFileLogger {
         }
 
         Ok(SingleFileLogger {
-            file: Mutex::new(LineWriter::new(file)),
+            file: Arc::new(Mutex::new(LogFile {
+                writer: LineWriter::new(file),
+                truncate_pending: !append,
+            })),
             file_path: PathBuf::from(path),
             config,
         })
+    }
+
+    /// Returns a callback that empties the file when `append` is false, unless a message was
+    /// already written. `Ftail::init` runs it after the logger is installed.
+    pub(crate) fn truncate_callback(&self) -> impl FnOnce() + Send + Sync + 'static {
+        let file = Arc::clone(&self.file);
+
+        move || {
+            file.lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .truncate_if_pending()
+        }
     }
 }
 
@@ -58,10 +86,11 @@ impl Log for SingleFileLogger {
 
         let mut file = self.file.lock().unwrap_or_else(PoisonError::into_inner);
 
-        rotate_if_exceeds_max_file_size(&mut file, &self.file_path, &self.config);
+        file.truncate_if_pending();
+        rotate_if_exceeds_max_file_size(&mut file.writer, &self.file_path, &self.config);
 
-        let _ = writeln!(file, "{}", message);
-        let _ = file.flush();
+        let _ = writeln!(file.writer, "{}", message);
+        let _ = file.writer.flush();
     }
 
     fn flush(&self) {
@@ -69,6 +98,7 @@ impl Log for SingleFileLogger {
             .file
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
+            .writer
             .flush();
     }
 }
@@ -162,6 +192,74 @@ mod tests {
         };
         let logger = SingleFileLogger::new(&path, true, config).unwrap();
         log_line(&logger, "first");
+        log_line(&logger, "second");
+        log_line(&logger, "third");
+
+        let read = |name: &str| std::fs::read_to_string(dir.join(name)).unwrap();
+        assert!(read("app.log.old").contains("first"));
+        assert!(read("app.log.old1").contains("second"));
+        assert!(read("app.log").contains("third"));
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn it_keeps_the_old_log_when_init_fails() {
+        let dir = test_dir("single-init-fails");
+        let path = dir.join("app.log");
+        std::fs::write(&path, "old line\n").unwrap();
+
+        let result = crate::Ftail::new()
+            .single_file(&path, false, LevelFilter::Trace)
+            .single_file(
+                &dir.join("missing").join("app.log"),
+                true,
+                LevelFilter::Trace,
+            )
+            .build();
+
+        assert!(result.is_err());
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "old line\n");
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn it_empties_the_file_once_the_logger_is_installed() {
+        let dir = test_dir("single-installed");
+        let path = dir.join("app.log");
+        std::fs::write(&path, "old line\n").unwrap();
+
+        let mut ftail = crate::Ftail::new()
+            .single_file(&path, false, LevelFilter::Trace)
+            .build()
+            .unwrap();
+
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "old line\n");
+
+        for callback in ftail.take_on_installed() {
+            callback();
+        }
+
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "");
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn it_recreates_the_file_when_a_rotation_could_not_create_it() {
+        let dir = test_dir("single-recreate");
+        let path = dir.join("app.log");
+
+        let config = Config {
+            max_file_size: Some(10),
+            ..config()
+        };
+        let logger = SingleFileLogger::new(&path, true, config).unwrap();
+        log_line(&logger, "first");
+
+        std::fs::rename(&path, dir.join("app.log.old")).unwrap();
+
         log_line(&logger, "second");
         log_line(&logger, "third");
 

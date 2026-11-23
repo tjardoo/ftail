@@ -20,7 +20,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! ftail = "0.3"
+//! ftail = "0.4"
 //! ```
 //!
 //! Initialize Ftail in your `main.rs` or `lib.rs`:
@@ -232,7 +232,8 @@ pub struct Ftail {
 unsafe impl Send for Ftail {}
 unsafe impl Sync for Ftail {}
 
-type ChannelResult = Result<Box<dyn Log + Send + Sync>, FtailError>;
+type ChannelResult = Result<InitializedLogChannel, FtailError>;
+type OnInstalled = Box<dyn FnOnce() + Send + Sync>;
 
 pub(crate) struct LogChannel {
     constructor: Box<dyn Fn(Config) -> ChannelResult>,
@@ -241,6 +242,8 @@ pub(crate) struct LogChannel {
 
 pub(crate) struct InitializedLogChannel {
     channel: Box<dyn Log + Send + Sync>,
+    // Work that must only happen once `init()` can no longer fail.
+    on_installed: Option<OnInstalled>,
 }
 
 /// The configuration struct for the logger. Required for custom channels.
@@ -321,7 +324,11 @@ impl Ftail {
     #[cfg(feature = "console")]
     pub fn console(self, level: log::LevelFilter) -> Self {
         self.add_channel(
-            |config: Config| Ok(Box::new(ConsoleLogger::new(config)) as Box<dyn Log + Send + Sync>),
+            |config: Config| {
+                Ok(InitializedLogChannel::new(Box::new(ConsoleLogger::new(
+                    config,
+                ))))
+            },
             level,
         )
     }
@@ -337,7 +344,9 @@ impl Ftail {
     pub fn formatted_console(self, level: log::LevelFilter) -> Self {
         self.add_channel(
             |config: Config| {
-                Ok(Box::new(FormattedConsoleLogger::new(config)) as Box<dyn Log + Send + Sync>)
+                Ok(InitializedLogChannel::new(Box::new(
+                    FormattedConsoleLogger::new(config),
+                )))
             },
             level,
         )
@@ -358,7 +367,10 @@ impl Ftail {
             move |config: Config| {
                 let logger = SingleFileLogger::new(&path, append, config)?;
 
-                Ok(Box::new(logger) as Box<dyn Log + Send + Sync>)
+                Ok(InitializedLogChannel {
+                    on_installed: Some(Box::new(logger.truncate_callback())),
+                    channel: Box::new(logger),
+                })
             },
             level,
         )
@@ -379,7 +391,7 @@ impl Ftail {
             move |config: Config| {
                 let logger = DailyFileLogger::new(&path, config)?;
 
-                Ok(Box::new(logger) as Box<dyn Log + Send + Sync>)
+                Ok(InitializedLogChannel::new(Box::new(logger)))
             },
             level,
         )
@@ -396,15 +408,32 @@ impl Ftail {
     where
         F: Fn(Config) -> Box<dyn Log + Send + Sync> + 'static,
     {
-        self.add_channel(move |config| Ok(constructor(config)), level)
+        self.add_channel(
+            move |config| Ok(InitializedLogChannel::new(constructor(config))),
+            level,
+        )
     }
 
     /// Initialize the logger.
     pub fn init(self) -> Result<(), FtailError> {
-        let logger = self.build()?;
+        let mut logger = self.build()?;
+        let on_installed = logger.take_on_installed();
 
         log::set_max_level(log::LevelFilter::Trace);
-        log::set_boxed_logger(Box::new(logger)).map_err(FtailError::SetLoggerError)
+        log::set_boxed_logger(Box::new(logger)).map_err(FtailError::SetLoggerError)?;
+
+        for callback in on_installed {
+            callback();
+        }
+
+        Ok(())
+    }
+
+    fn take_on_installed(&mut self) -> Vec<OnInstalled> {
+        self.initialized_channels
+            .iter_mut()
+            .filter_map(|channel| channel.on_installed.take())
+            .collect()
     }
 
     // Separate from `init` so tests can log without installing the global logger.
@@ -440,10 +469,17 @@ impl LogChannel {
         }
     }
 
-    fn init(self, config: Config) -> Result<InitializedLogChannel, FtailError> {
-        Ok(InitializedLogChannel {
-            channel: (self.constructor)(config)?,
-        })
+    fn init(self, config: Config) -> ChannelResult {
+        (self.constructor)(config)
+    }
+}
+
+impl InitializedLogChannel {
+    fn new(channel: Box<dyn Log + Send + Sync>) -> Self {
+        Self {
+            channel,
+            on_installed: None,
+        }
     }
 }
 

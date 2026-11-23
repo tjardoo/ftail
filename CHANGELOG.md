@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased
+## v0.4.0 (2026-11-23)
 
-- **Behaviour change:** `LevelFilter::Off` (and `RUST_LOG=off`) now disables a channel. Previously it logged every level; use `LevelFilter::Trace` to log everything
+- **Behaviour change:** `LevelFilter::Off` (and `RUST_LOG=off`) now disables a channel. Previously it logged every level; use `LevelFilter::Trace` to log everything. `Config::new()` now defaults to `LevelFilter::Trace`
 - Fix `single_file` with `append = false` not overwriting the existing file
 - Fix the daily file channel writing to the previous day's file after a `max_file_size` rotation
 - `RUST_LOG` values like `info,hyper=warn` no longer panic; the bare level is used, otherwise `info`
