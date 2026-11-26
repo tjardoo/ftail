@@ -34,7 +34,7 @@
 //!     std::fs::create_dir_all("logs")?;
 //!
 //!     Ftail::new()
-//!         .console(LevelFilter::Info)        // log to console
+//!         .console(LevelFilter::Info) // log to console
 //!         .daily_file(Path::new("logs"), LevelFilter::Error) // log errors to daily files
 //!         .init()?; // initialize logger
 //!
